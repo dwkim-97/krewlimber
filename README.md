@@ -92,3 +92,6 @@ SQLite DB와 WAL 파일은 함께 일관성을 보장해야 합니다. 실행 �
 - `test.red`, `test.host`, `test.twin`: 색상·번개 타이틀과 공동 1위
 - `test.badge`, `test.unset`, `test.rookie`: 대표 업적만 보유·대표 미선택·미획득
 - `test.pending`, `test.rest`: 승인 대기·정지
+
+
+test
