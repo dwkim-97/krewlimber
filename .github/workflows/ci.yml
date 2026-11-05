@@ -1,0 +1,24 @@
+name: Verify
+permissions:
+  contents: read
+on:
+  pull_request:
+  push:
+    branches: [bootstrap]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+      - run: pnpm lint
+      - run: pnpm test:unit
+      - run: pnpm build

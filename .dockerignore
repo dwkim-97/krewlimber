@@ -1,0 +1,8 @@
+node_modules
+dist
+data
+.git
+.superpowers
+deploy/.env.local
+deploy/.env.production
+*.log

@@ -1,0 +1,8 @@
+node_modules/
+dist/
+data/
+deploy/.env.local
+deploy/.env.production
+.superpowers/
+*.log
+.DS_Store

@@ -1,0 +1,13 @@
+services:
+  web:
+    build: .
+    ports:
+      - '127.0.0.1:4173:4173'
+    environment:
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN to your HTTPS site origin}
+      TRUST_PROXY: ${TRUST_PROXY:?Set TRUST_PROXY to the exact reverse proxy IP or CIDR}
+    volumes:
+      - krew-data:/app/data
+    restart: unless-stopped
+volumes:
+  krew-data:
