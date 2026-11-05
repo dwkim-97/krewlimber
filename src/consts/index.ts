@@ -1,4 +1,4 @@
-import type {HonorKind, MemberStatus} from '@/types';
+import type {MemberStatus} from '@/types';
 
 export const SESSION_CHECK_EVENT = 'krew:session-check';
 
@@ -9,4 +9,3 @@ export const STATUS_LABELS: Record<MemberStatus, string> = {
   rejected: '가입 반려',
   suspended: '활동 정지',
 };
-export const HONOR_LABELS: Record<HonorKind, string> = {send: '완등의 순간', growth: '한 뼘의 성장', crew: '크루의 힘'};

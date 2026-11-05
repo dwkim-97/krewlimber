@@ -1,6 +1,7 @@
-import {ArrowUpRight, Menu, Mountain, X} from 'lucide-react';
+import {ArrowUpRight, Menu, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useLocation} from 'react-router-dom';
+import {BrandLogo} from '@/components/BrandLogo';
 import {useSession} from '@/hooks/useSession';
 
 export function Layout() {
@@ -17,8 +18,8 @@ export function Layout() {
       </a>
       <header className="site-header">
         <div className="header-inner">
-          <Link to="/" className="brand" aria-label="크루라이머 홈" onClick={() => setMenuOpen(false)}>
-            <img src="/krewlimber-logo.svg" alt="KREWLIMBER" />
+          <Link to="/" className="brand-link" aria-label="크루라이머 홈" onClick={() => setMenuOpen(false)}>
+            <BrandLogo size="header" />
           </Link>
           <button
             className="menu-toggle"
@@ -65,27 +66,9 @@ export function Layout() {
       <main id="main">
         <Outlet />
       </main>
-      <footer className="site-footer">
-        <div className="footer-top">
-          <div>
-            <Link to="/" className="footer-name">
-              KREWLIMBER<span>↗</span>
-            </Link>
-            <p>크루라이머 · 사내 클라이밍 동호회</p>
-          </div>
-          <div className="footer-note">
-            <Mountain size={20} />
-            <span>
-              GOOD PEOPLE.
-              <br />
-              GREAT CLIMBS.
-            </span>
-          </div>
-        </div>
-        <div className="footer-bottom">
-          <span>© {new Date().getFullYear()} KREWLIMBER CLIMBING CREW</span>
-          <span>MEMBERS ONLY</span>
-        </div>
+      <footer className="site-footer compact-footer">
+        <span>KREWLIMBER</span>
+        <span>© {new Date().getFullYear()}</span>
       </footer>
     </>
   );

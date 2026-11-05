@@ -1,10 +1,16 @@
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
+import {DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
+  const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
+  if (version > 2) {
+    db.close();
+    throw new Error('Unsupported database version.');
+  }
   if (path !== ':memory:') chmodSync(path, 0o600);
   db.exec(`
     PRAGMA foreign_keys = ON;
@@ -52,8 +58,37 @@ export function openDatabase(path: string) {
       details TEXT NOT NULL,
       createdAt TEXT NOT NULL
     );
-    PRAGMA user_version = 1;
   `);
+  if (version < 2)
+    transaction(db, () => {
+      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 2) return;
+      db.exec(`
+      CREATE TABLE activityStats (
+        userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        quarter TEXT NOT NULL,
+        metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple')),
+        value INTEGER NOT NULL CHECK(value >= 0 AND value <= 1000000 AND typeof(value) = 'integer'),
+        PRIMARY KEY(userId,quarter,metric)
+      );
+      CREATE TABLE achievementDefinitions (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE,
+        description TEXT NOT NULL,
+        metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple')),
+        target INTEGER NOT NULL CHECK(target > 0 AND target <= 1000000 AND typeof(target) = 'integer')
+      );
+      CREATE TABLE featuredAchievements (
+        userId TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+        achievementId TEXT NOT NULL REFERENCES achievementDefinitions(id) ON DELETE CASCADE
+      );
+    `);
+      const insert = db.prepare(
+        'INSERT INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
+      );
+      for (const achievement of DEFAULT_ACHIEVEMENTS)
+        insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
+      db.exec('PRAGMA user_version = 2;');
+    });
   return db;
 }
 

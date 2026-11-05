@@ -19,9 +19,85 @@ export interface User extends Profile {
   createdAt: string;
 }
 
-export interface Member extends Profile {
+export interface MemberProfile extends Profile {
   id: string;
   createdAt: string;
+}
+
+export interface Member extends MemberProfile {
+  titles: TitleBadge[];
+  featuredAchievement: FeaturedAchievement | null;
+}
+
+export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple';
+export type ActivityCounts = Record<ActivityMetric, number>;
+export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple';
+
+export interface MetricDefinition {
+  id: ActivityMetric;
+  label: string;
+  unit: '회' | '개';
+}
+export interface AchievementDefinition {
+  id: string;
+  name: string;
+  description: string;
+  metric: ActivityMetric;
+  target: number;
+}
+export interface AchievementProgress extends AchievementDefinition {
+  progress: number;
+  earned: boolean;
+  featured: boolean;
+}
+export interface AchievementCollection {
+  achievements: AchievementProgress[];
+  featuredAchievementId: string | null;
+}
+export interface FeaturedAchievement {
+  id: string;
+  name: string;
+  description: string;
+}
+export interface TitleBadge {
+  id: string;
+  name: string;
+  quarter: string;
+  accent: Accent;
+}
+export interface TitleStanding {
+  userId: string;
+  nickname: string;
+  value: number;
+  rank: number;
+}
+export interface TitleCategory {
+  id: string;
+  name: string;
+  description: string;
+  metric: ActivityMetric;
+  unit: '회' | '개';
+  accent: Accent;
+  standings: TitleStanding[];
+}
+export interface TitleBoard {
+  quarter: string;
+  quarters: string[];
+  categories: TitleCategory[];
+}
+export interface ActivityMember {
+  id: string;
+  username: string;
+  nickname: string;
+  status: MemberStatus;
+  counts: ActivityCounts;
+}
+export interface AdminProgression {
+  quarter: string;
+  quarters: string[];
+  metrics: MetricDefinition[];
+  users: ActivityMember[];
+  achievements: AchievementDefinition[];
 }
 
 export interface Honor {
@@ -34,12 +110,4 @@ export interface Honor {
   kind: HonorKind;
   achievedAt: string;
   createdAt: string;
-}
-
-export interface HonorInput {
-  userId: string;
-  title: string;
-  description: string;
-  kind: HonorKind;
-  achievedAt: string;
 }

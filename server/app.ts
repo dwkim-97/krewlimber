@@ -4,7 +4,7 @@ import express, {type ErrorRequestHandler, type RequestHandler} from 'express';
 import {ipKeyGenerator, rateLimit} from 'express-rate-limit';
 import helmet from 'helmet';
 import {z, ZodError} from 'zod';
-import type {Honor, User} from '../src/types';
+import type {Honor, User, MemberProfile} from '../src/types';
 import {
   createAccount,
   createSession,
@@ -18,6 +18,9 @@ import {
   type UserRecord,
 } from './auth';
 import {transaction} from './db';
+import {ApiError} from './errors';
+import {currentQuarter, decorateMembers} from './progression';
+import {registerProgressionRoutes} from './progression-routes';
 import {usernameSchema as username, passwordSchema as password, nicknameSchema} from './validation';
 
 const profileSchema = z.object({
@@ -40,15 +43,6 @@ const honorSchema = z.object({
       return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
     }, '올바른 날짜를 입력해주세요.'),
 });
-
-class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string
-  ) {
-    super(message);
-  }
-}
 
 export function createApp({
   db,
@@ -216,15 +210,14 @@ export function createApp({
   });
   app.get('/api/members', (req, res) => {
     requireMember(req);
-    res.json({
-      members: db
-        .prepare(
-          `SELECT id, nickname, bio, location, gym, grade, createdAt FROM users
-      WHERE status = 'approved' ORDER BY createdAt ASC`
-        )
-        .all(),
-    });
+    const members = db
+      .prepare(
+        "SELECT id,nickname,bio,location,gym,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
+      )
+      .all() as unknown as MemberProfile[];
+    res.json({members: decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerProgressionRoutes(app, db, {user: requireUser, member: requireMember, admin: requireAdmin, audit});
   app.get('/api/honors', (req, res) => {
     requireMember(req);
     res.json({honors: honors(false)});

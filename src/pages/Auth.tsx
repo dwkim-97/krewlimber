@@ -1,6 +1,8 @@
-import {ArrowUpRight, Check, KeyRound, Mountain} from 'lucide-react';
+import {ArrowUpRight, Check, KeyRound} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {Link, Navigate, useLocation, useNavigate} from 'react-router-dom';
+import {BrandLogo} from '@/components/BrandLogo';
+import {ClimbingArt} from '@/components/ClimbingArt';
 import {ErrorNotice, Loading} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
 import {api} from '@/apis/client';
@@ -42,34 +44,13 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
   }
   return (
     <div className="auth-shell">
-      <aside className="auth-aside">
-        <Mountain size={34} strokeWidth={1.4} />
-        <div>
-          <div className="eyebrow">KREWLIMBER / MEMBERS ONLY</div>
-          <h2>
-            오늘도,
-            <br />한 홀드 더.<span>↗</span>
-          </h2>
-          <p>
-            크루라이머 사내 클라이밍 동호회 <br />
-            승인된 회원을 위한 공간입니다.
-          </p>
-        </div>
-        <span className="auth-aside-bottom">PRIVATE CREW SPACE</span>
+      <aside className="auth-aside auth-aside-logo">
+        <BrandLogo size="large" />
+        <ClimbingArt />
       </aside>
       <section className="auth-form-wrap">
-        <div className="eyebrow">
-          <span />
-          {recovery ? 'A FRESH START' : signup ? 'JOIN OUR CREW' : 'NICE TO SEE YOU AGAIN'}
-        </div>
-        <h1>{recovery ? '비밀번호 다시 설정' : signup ? '크루 회원 가입' : '크루라이머 로그인'}</h1>
-        <p className="auth-description">
-          {recovery
-            ? '운영진에게 신원 확인 후 받은 복구 코드를 입력해주세요.'
-            : signup
-              ? '나만의 아이디로 신청하면, 운영진이 확인해드려요.'
-              : '아이디와 비밀번호로 크루 공간에 들어오세요.'}
-        </p>
+        <h1>{recovery ? '비밀번호 재설정' : signup ? '회원 가입' : '로그인'}</h1>
+        {recovery && <p className="auth-description">운영진에게 받은 복구 코드를 입력해주세요.</p>}
         {done ? (
           <div className="success-panel">
             <Check size={32} />
@@ -95,11 +76,11 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
                 autoCapitalize="none"
                 spellCheck={false}
               />
-              <small>영문으로 시작하는 3~32자의 영문, 숫자, . _ -</small>
+              {signup && <small>영문으로 시작하는 3~32자 · 숫자, . _ - 사용 가능</small>}
             </label>
             {signup && (
               <label>
-                크루에서 부를 이름
+                닉네임
                 <input
                   name="nickname"
                   placeholder="닉네임을 알려주세요"
@@ -151,7 +132,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
             {signup && (
               <div className="form-note">
                 <Check size={17} />
-                <span>가입 후 운영진 승인을 거쳐 회원 기능을 이용할 수 있어요.</span>
+                <span>가입 후 운영진 승인이 필요합니다.</span>
               </div>
             )}
             {typeof (location.state as {notice: unknown} | null)?.notice === 'string' && (
@@ -161,19 +142,19 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
             )}
             {error && <ErrorNotice message={error} retry={null} />}
             <button className="button button-dark button-full" disabled={busy}>
-              {busy ? '처리 중…' : recovery ? '새 비밀번호 설정' : signup ? '크루 가입 신청' : '로그인'}
+              {busy ? '처리 중…' : recovery ? '새 비밀번호 설정' : signup ? '가입 신청' : '로그인'}
               <ArrowUpRight size={18} />
             </button>
             <div className="auth-switch">
               {signup ? (
                 <>
-                  이미 크루 멤버인가요? <Link to="/login">로그인</Link>
+                  이미 계정이 있나요? <Link to="/login">로그인</Link>
                 </>
               ) : recovery ? (
                 <Link to="/login">로그인으로 돌아가기</Link>
               ) : (
                 <>
-                  아직 크루 멤버가 아닌가요? <Link to="/signup">가입 신청</Link>
+                  처음 오셨나요? <Link to="/signup">가입 신청</Link>
                 </>
               )}
             </div>

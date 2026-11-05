@@ -1,7 +1,6 @@
 export function ClimbingArt() {
   return (
     <div className="climbing-art" aria-label="여러 홀드를 따라 함께 오르는 클라이밍 루트 일러스트" role="img">
-      <div className="art-coordinate">ROUTE / KREW-01</div>
       <svg viewBox="0 0 560 560" aria-hidden="true">
         <defs>
           <pattern id="wall-grid" width="38" height="38" patternUnits="userSpaceOnUse">
@@ -58,16 +57,6 @@ export function ClimbingArt() {
         </g>
         <circle cx="426" cy="94" r="44" fill="none" stroke="#86976b" strokeWidth="1" strokeDasharray="3 5" />
       </svg>
-      <div className="art-tag">
-        <span className="live-dot" /> ONE MORE TRY.<span>↗</span>
-      </div>
-      <div className="art-sticker">
-        ALL
-        <br />
-        LEVELS
-        <br />
-        <span>WELCOME</span>
-      </div>
     </div>
   );
 }

@@ -2,27 +2,10 @@ import {ArrowUpRight, Flag, LoaderCircle, RefreshCw} from 'lucide-react';
 import {Link} from 'react-router-dom';
 import type {ReactNode} from 'react';
 
-export function PageHeading({
-  eyebrow,
-  title,
-  description,
-  children,
-}: {
-  eyebrow: string;
-  title: string;
-  description: string;
-  children?: ReactNode;
-}) {
+export function PageHeading({title, children}: {title: string; children?: ReactNode}) {
   return (
     <div className="page-heading">
-      <div>
-        <div className="eyebrow">
-          <span />
-          {eyebrow}
-        </div>
-        <h1>{title}</h1>
-        <p>{description}</p>
-      </div>
+      <h1>{title}</h1>
       {children}
     </div>
   );

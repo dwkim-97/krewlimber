@@ -14,6 +14,7 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/server ./server
 COPY --from=build --chown=node:node /app/scripts ./scripts
 COPY --from=build --chown=node:node /app/src/types ./src/types
+COPY --from=build --chown=node:node /app/src/consts ./src/consts
 COPY --from=build --chown=node:node /app/package.json ./package.json
 RUN mkdir /app/data && chown node:node /app/data
 USER node
