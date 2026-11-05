@@ -1,9 +1,11 @@
+import {readFileSync} from 'node:fs';
 import {resolve} from 'node:path';
 import express from 'express';
 import {config} from 'dotenv';
 import {createApp} from './app';
 import {openDatabase} from './db';
 import {environmentFile} from './environment';
+import {renderSiteMetadata} from './metadata';
 
 const production = process.env.NODE_ENV === 'production';
 config({path: resolve(environmentFile(process.env)), quiet: true});
@@ -19,11 +21,22 @@ const db = openDatabase(process.env.DATABASE_PATH ?? './data/krewlimber.sqlite')
 const app = createApp({db, origin, secureCookies: production, trustProxy});
 
 if (production) {
-  app.use(express.static(resolve('dist')));
-  app.get('/{*path}', (_req, res) => res.sendFile(resolve('dist/index.html')));
+  const html = renderSiteMetadata(readFileSync(resolve('dist/index.html'), 'utf8'), origin);
+  app.get(['/', '/index.html'], (_req, res) => res.type('html').send(html));
+  app.use(express.static(resolve('dist'), {index: false}));
+  app.get('/{*path}', (_req, res) => res.type('html').send(html));
 } else {
   const {createServer} = await import('vite');
-  const vite = await createServer({server: {middlewareMode: true, hmr: {port: port + 1}}, appType: 'spa'});
+  const vite = await createServer({
+    server: {middlewareMode: true, hmr: {port: port + 1}},
+    appType: 'spa',
+    plugins: [
+      {
+        name: 'runtime-site-metadata',
+        transformIndexHtml: {order: 'pre', handler: html => renderSiteMetadata(html, origin)},
+      },
+    ],
+  });
   app.use(vite.middlewares);
 }
 const server = app.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log(`KREWLIMBER: ${origin}`));

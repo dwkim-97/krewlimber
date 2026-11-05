@@ -44,9 +44,15 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
   }
   return (
     <div className="auth-shell">
-      <aside className="auth-aside auth-aside-logo">
-        <BrandLogo size="large" />
-        <ClimbingArt />
+      <aside className={`auth-aside ${signup ? 'auth-aside-mascot' : 'auth-aside-logo'}`}>
+        {signup ? (
+          <img src="/chun-sik-02.webp" alt="초크백을 준비하는 춘식이" width={1080} height={1080} />
+        ) : (
+          <>
+            <BrandLogo size="large" />
+            <ClimbingArt />
+          </>
+        )}
       </aside>
       <section className="auth-form-wrap">
         <h1>{recovery ? '비밀번호 재설정' : signup ? '회원 가입' : '로그인'}</h1>

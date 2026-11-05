@@ -1645,8 +1645,15 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
 }
 
 .brand-link {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   flex-shrink: 0;
+}
+.brand-mascot {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
 }
 .brand-large {
   width: min(285px, 100%);
@@ -1945,8 +1952,8 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   border: 1px solid #dce3d0;
   color: #687859;
   border-radius: 5px;
-  padding: 13px 12px;
-  min-height: 48px;
+  padding: 1px 10px;
+  min-height: 36px;
 }
 .member-featured strong {
   flex: 1;
@@ -1959,7 +1966,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   background: transparent;
   border: 1px dashed #d8ddce;
   color: #a0a78e;
-  min-height: 48px;
 }
 .member-featured-empty span {
   font-size: 10px;
@@ -2660,5 +2666,33 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     padding-left: 8px;
     padding-right: 6px;
     gap: 8px;
+  }
+}
+
+.auth-aside-mascot {
+  padding: 0;
+  justify-content: center;
+  align-items: center;
+  background: #f6edcc;
+}
+.auth-aside-mascot::after {
+  display: none;
+}
+.auth-aside-mascot > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+@media (max-width: 580px) {
+  .brand-mascot {
+    width: 48px;
+    height: 48px;
+  }
+  .auth-aside-mascot {
+    min-height: 0;
+  }
+  .auth-aside-mascot > img {
+    height: 240px;
   }
 }
