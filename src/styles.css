@@ -1648,34 +1648,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   display: block;
   flex-shrink: 0;
 }
-.brand-large {
-  width: min(285px, 100%);
-  height: auto;
-  aspect-ratio: 285 / 64;
-}
-.brand-large img {
-  width: 123.16%;
-  height: 309.375%;
-  left: -11.228%;
-  top: -107.8125%;
-}
-.auth-aside-logo {
-  justify-content: center;
-  align-items: center;
-  gap: 32px;
-}
-.auth-aside-logo::after {
-  display: none;
-}
-.auth-aside-logo > .brand {
-  z-index: 1;
-  flex-shrink: 0;
-}
-.auth-aside-logo > .climbing-art {
-  width: 100%;
-  max-width: 340px;
-  z-index: 0;
-}
 .auth-form-wrap > h1 {
   margin: 0 0 28px;
   font-size: 29px;
@@ -2335,19 +2307,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
 }
 @media (max-width: 580px) {
-  .auth-aside-logo {
-    min-height: 0;
-    padding: 32px 24px;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-  }
-  .auth-aside-logo > .climbing-art {
-    display: none;
-  }
-  .brand-large {
-    width: min(226px, 100%);
-  }
   .auth-form-wrap > h1 {
     font-size: 25px;
     margin-bottom: 25px;

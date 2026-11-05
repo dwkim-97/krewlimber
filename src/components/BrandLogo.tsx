@@ -1,6 +1,6 @@
-export function BrandLogo({size}: {size: 'header' | 'large'}) {
+export function BrandLogo() {
   return (
-    <span className={`brand${size === 'large' ? ' brand-large' : ''}`}>
+    <span className="brand">
       <img src="/krewlimber-logo.svg" alt="KREWLIMBER" />
     </span>
   );

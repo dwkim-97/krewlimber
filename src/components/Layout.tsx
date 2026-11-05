@@ -19,7 +19,7 @@ export function Layout() {
       <header className="site-header">
         <div className="header-inner">
           <Link to="/" className="brand-link" aria-label="크루라이머 홈" onClick={() => setMenuOpen(false)}>
-            <BrandLogo size="header" />
+            <BrandLogo />
           </Link>
           <button
             className="menu-toggle"
