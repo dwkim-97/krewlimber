@@ -57,4 +57,4 @@
 - [x] Add administrator provisioning with hidden password input, audit-preserving one-time password reset by an authenticated admin, deployment and backup instructions.
 - [x] Run type-check, lint, test:unit, build and verify production server routing and health.
 - [x] Run /simplify, then independent Codex review (max two rounds) and fix validated findings.
-- [ ] Push bootstrap and feature branches, open an assigned PR targeting bootstrap, attach PR and show local preview. Do not merge.
+- [x] Push bootstrap and feature branches, open an assigned PR targeting bootstrap, attach PR and show local preview. Do not merge.
