@@ -2,7 +2,7 @@ import {Check, Clock3, KeyRound, LogOut, ShieldCheck} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Achievements} from '@/components/Achievements';
-import {Avatar, ErrorNotice, PageHeading} from '@/components/ui';
+import {Avatar, ErrorNotice, PageHeading, TextLink} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
 import {api} from '@/apis/client';
 import type {User} from '@/types';
@@ -69,7 +69,7 @@ export function Me() {
   const approved = user.status === 'approved';
   return (
     <div className="page-shell">
-      <PageHeading title="내 정보" />
+      <PageHeading title="내 정보">{approved && <TextLink to="/me/orders">내 포인트·교환</TextLink>}</PageHeading>
       <div className="profile-layout">
         <aside className="profile-summary">
           <Avatar name={user.nickname} index={0} />

@@ -2628,3 +2628,34 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     margin-top: 8px;
   }
 }
+
+@media (min-width: 821px) and (max-width: 1100px) {
+  .menu-toggle {
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 0;
+    padding: 7px;
+  }
+  .nav {
+    display: none;
+    position: absolute;
+    top: 88px;
+    left: 0;
+    right: 0;
+    background: var(--paper);
+    z-index: 20;
+    border-bottom: 1px solid var(--line);
+    padding: 23px 25px;
+    box-shadow: 0 20px 30px #25291f0d;
+  }
+  .nav.open {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 13px;
+  }
+  .nav-divider {
+    display: none;
+  }
+}

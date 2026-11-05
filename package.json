@@ -18,7 +18,8 @@
     "prepare": "husky",
     "test": "vitest run",
     "format:check": "prettier --check .",
-    "demo:seed": "tsx scripts/seed-demo.ts"
+    "demo:seed": "tsx scripts/seed-demo.ts",
+    "demo:boards": "tsx scripts/seed-boards.ts"
   },
   "dependencies": {
     "dotenv": "18.0.9",

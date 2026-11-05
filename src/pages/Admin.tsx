@@ -1,5 +1,6 @@
 import {Check, KeyRound, ShieldCheck} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
+import {AdminMarket} from '@/components/AdminMarket';
 import {AdminProgression} from '@/components/AdminProgression';
 import {Avatar, EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
@@ -150,7 +151,7 @@ function AdminMembers() {
 }
 
 export function Admin() {
-  const [tab, setTab] = useState<'members' | 'activity' | 'achievements'>('members');
+  const [tab, setTab] = useState<'members' | 'activity' | 'achievements' | 'market'>('members');
   return (
     <div className="page-shell">
       <PageHeading title="크루 관리">
@@ -169,8 +170,17 @@ export function Admin() {
         <button className={tab === 'achievements' ? 'active' : ''} onClick={() => setTab('achievements')}>
           업적 관리
         </button>
+        <button className={tab === 'market' ? 'active' : ''} onClick={() => setTab('market')}>
+          마켓 관리
+        </button>
       </div>
-      {tab === 'members' ? <AdminMembers /> : <AdminProgression key={tab} mode={tab} />}
+      {tab === 'members' ? (
+        <AdminMembers />
+      ) : tab === 'market' ? (
+        <AdminMarket />
+      ) : (
+        <AdminProgression key={tab} mode={tab} />
+      )}
     </div>
   );
 }

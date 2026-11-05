@@ -1,5 +1,14 @@
 import {SESSION_CHECK_EVENT} from '@/consts';
 
+export class ApiRequestError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number
+  ) {
+    super(message);
+  }
+}
+
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`/api${path}`, {
     ...init,
@@ -11,7 +20,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     if ((response.status === 401 || response.status === 403) && path !== '/me') {
       window.dispatchEvent(new Event(SESSION_CHECK_EVENT));
     }
-    throw new Error(data.error ?? '요청을 처리하지 못했습니다.');
+    throw new ApiRequestError(data.error ?? '요청을 처리하지 못했습니다.', response.status);
   }
   return data as T;
 }

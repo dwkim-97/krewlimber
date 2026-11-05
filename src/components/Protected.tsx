@@ -1,6 +1,6 @@
 import {LockKeyhole} from 'lucide-react';
 import {Link, Navigate, useLocation} from 'react-router-dom';
-import type {ReactNode} from 'react';
+import {Fragment, type ReactNode} from 'react';
 import {EmptyState, ErrorNotice, Loading} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
 
@@ -41,5 +41,5 @@ export function Protected({children, access}: {children: ReactNode; access: 'use
         </EmptyState>
       </div>
     );
-  return children;
+  return <Fragment key={user.id}>{children}</Fragment>;
 }

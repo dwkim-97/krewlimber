@@ -41,6 +41,8 @@ export function Layout() {
                 <NavLink to="/" end>
                   베이스캠프
                 </NavLink>
+                <NavLink to="/notices">공지사항</NavLink>
+                <NavLink to="/market">포인트 마켓</NavLink>
                 <NavLink to="/members">멤버</NavLink>
                 <NavLink to="/hall-of-fame">명예의 전당</NavLink>
                 {user.role === 'admin' && <NavLink to="/admin">크루 관리</NavLink>}
