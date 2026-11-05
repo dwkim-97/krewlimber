@@ -1645,15 +1645,8 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
 }
 
 .brand-link {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: block;
   flex-shrink: 0;
-}
-.brand-mascot {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
 }
 .brand-large {
   width: min(285px, 100%);
@@ -2685,10 +2678,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   object-fit: contain;
 }
 @media (max-width: 580px) {
-  .brand-mascot {
-    width: 48px;
-    height: 48px;
-  }
   .auth-aside-mascot {
     min-height: 0;
   }

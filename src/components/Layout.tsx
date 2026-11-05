@@ -20,7 +20,6 @@ export function Layout() {
         <div className="header-inner">
           <Link to="/" className="brand-link" aria-label="크루라이머 홈" onClick={() => setMenuOpen(false)}>
             <BrandLogo size="header" />
-            <img className="brand-mascot" src="/chun-sik-01.webp" alt="" width={56} height={56} />
           </Link>
           <button
             className="menu-toggle"
