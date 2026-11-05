@@ -1,6 +1,5 @@
 import {ArrowUpRight, Award, Mountain, UserRound, Users} from 'lucide-react';
 import {Link} from 'react-router-dom';
-import {ClimbingArt} from '@/components/ClimbingArt';
 import {TitleList} from '@/components/TitleList';
 import {ErrorNotice, Loading, TextLink} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
@@ -29,7 +28,13 @@ export function Home() {
             <ArrowUpRight size={18} />
           </Link>
         </div>
-        <ClimbingArt />
+        <img
+          className="dashboard-mascot"
+          src="/chun-sik-02.webp"
+          alt="초크백을 준비하는 춘식이"
+          width={1080}
+          height={1080}
+        />
       </section>
       <nav className="dashboard-links" aria-label="크루 바로가기">
         <Link to="/members">

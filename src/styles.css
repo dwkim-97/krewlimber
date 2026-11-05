@@ -209,16 +209,6 @@ svg {
   color: #4d5940;
   letter-spacing: 0.5px;
 }
-.climbing-art {
-  position: relative;
-  min-width: 0;
-}
-.climbing-art > svg {
-  width: 100%;
-  height: auto;
-  display: block;
-  overflow: visible;
-}
 .section-heading {
   display: flex;
   align-items: flex-end;
@@ -1002,11 +992,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   min-height: 44px;
   font-size: 11px;
 }
-.dashboard-welcome .climbing-art {
-  max-width: 350px;
-  width: 100%;
-  justify-self: end;
-}
 .dashboard-links {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -1103,9 +1088,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     line-height: 1.5;
     margin-top: 17px;
   }
-  .dashboard-welcome .climbing-art {
-    display: none;
-  }
   .dashboard-welcome p {
     font-size: 11px;
   }
@@ -1141,11 +1123,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
 }
 
-@media (min-width: 1450px) {
-  .climbing-art {
-    max-width: 590px;
-  }
-}
 @media (max-width: 1100px) {
   .page-width,
   .page-shell {
@@ -1354,11 +1331,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   .pill {
     font-size: 7px;
     padding: 5px 7px;
-  }
-  .climbing-art {
-    width: 100%;
-    max-width: 380px;
-    margin: 20px auto 0;
   }
   .section-heading {
     align-items: flex-start;
@@ -1687,9 +1659,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
 }
 .dashboard-welcome h1 {
   font-size: 35px;
-}
-.dashboard-welcome > .climbing-art {
-  max-width: 300px;
 }
 .dashboard-links {
   margin-bottom: 36px;
@@ -2642,5 +2611,20 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
   .auth-aside-mascot > img {
     height: 240px;
+  }
+}
+
+.dashboard-mascot {
+  width: 100%;
+  height: auto;
+  max-width: 300px;
+  min-width: 0;
+  justify-self: end;
+  object-fit: contain;
+}
+@media (max-width: 580px) {
+  .dashboard-mascot {
+    max-width: 190px;
+    margin-top: 8px;
   }
 }
