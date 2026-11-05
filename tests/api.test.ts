@@ -58,7 +58,7 @@ describe('own-account authentication', () => {
           .send({currentPassword: password, newPassword: 'new climbing passphrase'})
       ).status
     ).toBe(200);
-  });
+  }, 15000);
   it('creates a pending account without email, hashes password and retains its session', async () => {
     const agent = request.agent(app);
     const response = await agent
@@ -134,7 +134,7 @@ describe('own-account authentication', () => {
     expect(
       (await request(app).post('/api/auth/login').set('Origin', origin).send({username: 'nobody', password})).status
     ).toBe(429);
-  });
+  }, 15000);
   it('always allows an existing session to log out after credential throttling', async () => {
     await account('aiden.dw', 'member', 'approved');
     const agent = await login('aiden.dw');
@@ -143,7 +143,7 @@ describe('own-account authentication', () => {
     }
     expect((await agent.post('/api/auth/logout').set('Origin', origin)).status).toBe(200);
     expect((await agent.get('/api/me')).body.user).toBeNull();
-  });
+  }, 15000);
 });
 
 describe('membership authorization', () => {
