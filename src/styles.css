@@ -1767,17 +1767,30 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   align-items: start;
 }
 .title-tile {
-  background: #fffef8;
-  border: 1px solid #dce1d1;
+  background: linear-gradient(115deg, #fff9df, #fffef8 65%);
+  border: 1px solid #d8bf7e;
   border-radius: 7px;
   overflow: hidden;
-  border-left: 3px solid var(--accent);
+  border-left: 4px solid var(--accent);
+  box-shadow:
+    0 4px 14px #ad8b3420,
+    inset 0 1px #fff;
+}
+.title-tile-header {
+  display: flex;
+  align-items: center;
+}
+.title-tile-header > .info-button {
+  margin-right: 12px;
+  color: #8b6b29;
 }
 .title-toggle {
+  flex: 1;
+  min-width: 0;
   border: 0;
   background: transparent;
   display: grid;
-  grid-template-columns: 40px minmax(95px, 1fr) minmax(130px, 1.4fr) 16px;
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1.4fr) 16px;
   align-items: center;
   gap: 12px;
   width: 100%;
@@ -1787,15 +1800,18 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   min-height: 104px;
 }
 .title-toggle:hover {
-  background: #f4f6ed;
+  background: #f7edcd;
 }
 .title-symbol {
+  position: relative;
   width: 40px;
   height: 43px;
   display: grid;
   place-items: center;
   color: var(--accent);
-  background: var(--accent-bg);
+  background: linear-gradient(140deg, #fff4c8, #e7d18e);
+  border: 1px solid #cfb56b;
+  box-shadow: 0 2px 6px #a8873426;
   border-radius: 32% 46% 35% 40%;
 }
 .title-name {
@@ -1884,32 +1900,58 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
 .title-badge {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  font-size: 11px;
+  gap: 6px;
+  max-width: 100%;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.5;
-  background: var(--accent-bg);
-  color: var(--accent);
-  padding: 5px 8px;
-  border-radius: 4px;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
-  white-space: nowrap;
+  background: linear-gradient(115deg, #342d22, #5c472b 55%, #322c22);
+  color: #ffe6a0;
+  padding: 3px 4px 3px 10px;
+  border-radius: 6px;
+  border: 1px solid #c9a455;
+  box-shadow:
+    inset 0 1px #fff3,
+    0 0 0 2px #ead8a04d,
+    0 3px 10px #8d6b302b;
+}
+.title-badge > span {
+  overflow-wrap: anywhere;
+}
+.title-badge > svg {
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 3px #e8bc5580);
+}
+.title-badge-spark {
+  align-self: flex-start;
+  margin-top: 4px;
+}
+.title-badge > .info-button {
+  color: #e4c67c;
+}
+.title-symbol-crown {
+  position: absolute;
+  top: -8px;
+  right: -5px;
+  color: #96701f;
+  fill: #f4d77e;
 }
 .member-featured {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-top: 14px;
-  background: #303a28;
-  border: 1px solid #303a28;
-  color: #e2f5ad;
+  background: #f0f3e9;
+  border: 1px solid #dce3d0;
+  color: #687859;
   border-radius: 5px;
   padding: 13px 12px;
   min-height: 48px;
 }
 .member-featured strong {
-  font-size: 13px;
-  font-weight: 700;
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.6;
   letter-spacing: -0.2px;
 }
@@ -1983,8 +2025,19 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   padding: 16px 12px;
   min-height: 96px;
 }
-.achievement-row + .achievement-row {
-  border-top-color: #edf0e5;
+.achievement-row-shell {
+  display: flex;
+  align-items: center;
+}
+.achievement-row-shell + .achievement-row-shell {
+  border-top: 1px solid #edf0e5;
+}
+.achievement-row-shell > .achievement-row {
+  flex: 1;
+  min-width: 0;
+}
+.achievement-row-shell > .info-button {
+  margin-right: 4px;
 }
 .achievement-row:hover {
   background: #f3f6eb;
@@ -2339,7 +2392,7 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     height: 37px;
     grid-row: 1/3;
   }
-  .title-symbol svg {
+  .title-symbol > svg:not(.title-symbol-crown) {
     width: 22px;
   }
   .title-name {
@@ -2369,11 +2422,10 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     font-size: 21px;
   }
   .title-badge {
-    font-size: 11px;
-    padding: 5px 8px;
+    font-size: 12px;
   }
   .member-featured strong {
-    font-size: 14px;
+    font-size: 12px;
   }
   .member-card-decorated {
     padding: 25px;
@@ -2517,5 +2569,96 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
   .activity-selects > label {
     margin-top: 20px;
+  }
+}
+
+.info-button,
+.info-close {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #7b886a;
+}
+.info-button:hover,
+.info-close:hover {
+  background: #929c7626;
+}
+.info-button:focus-visible,
+.info-close:focus-visible {
+  outline: 2px solid #aa8736;
+  outline-offset: 2px;
+}
+.member-featured > .info-button {
+  margin-left: auto;
+}
+.member-featured > svg {
+  flex-shrink: 0;
+}
+.info-dialog {
+  width: min(420px, calc(100% - 40px));
+  max-height: calc(100dvh - 48px);
+  margin: auto;
+  padding: 0;
+  overflow-y: auto;
+  background: #fffef8;
+  color: var(--ink);
+  border: 1px solid #d6c698;
+  border-radius: 12px;
+  box-shadow: 0 24px 90px #171c2159;
+}
+.info-dialog::backdrop {
+  background: #1e241c80;
+  backdrop-filter: blur(3px);
+}
+.info-dialog-content {
+  padding: 24px;
+}
+.info-dialog-heading,
+.achievement-detail-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  justify-content: space-between;
+}
+.info-dialog-heading h2 {
+  font-size: 20px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.info-dialog-description {
+  margin-top: 18px;
+  font-size: 13px;
+  line-height: 1.9;
+  color: #738066;
+  overflow-wrap: anywhere;
+}
+.info-dialog-description p + p {
+  margin-top: 12px;
+}
+.info-condition {
+  font-weight: 700;
+  color: #485638;
+}
+.achievement-detail-heading > .info-button {
+  color: #b2c59c;
+}
+@media (max-width: 580px) {
+  .title-tile-header > .info-button {
+    margin-right: 8px;
+  }
+  .title-toggle {
+    gap: 9px;
+    padding-right: 8px;
+  }
+  .achievement-row {
+    padding-left: 8px;
+    padding-right: 6px;
+    gap: 8px;
   }
 }

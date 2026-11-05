@@ -55,9 +55,9 @@ it('shows short conditions, prevents unearned selection, and updates the feature
   render(<Achievements />);
   const list = await screen.findByRole('group', {name: '업적 목록'});
   expect(within(list).getByText('[더클라임] 빨강 문제 50개 완등')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', {name: /레드 카펫은 내 길/}));
+  fireEvent.click(screen.getByRole('button', {name: /레드 카펫은 내 길/, pressed: false}));
   expect((screen.getByRole('button', {name: '대표로 선택'}) as HTMLButtonElement).disabled).toBe(true);
-  fireEvent.click(screen.getByRole('button', {name: /적색경보 해제/}));
+  fireEvent.click(screen.getByRole('button', {name: /적색경보 해제/, pressed: false}));
   await act(async () => {
     fireEvent.click(screen.getByRole('button', {name: '대표로 선택'}));
   });
@@ -84,9 +84,9 @@ it('shows all tied title holders and expands the actual standings', () => {
   };
   render(<TitleList categories={[category]} />);
   expect(screen.getByText('에이든, 초크')).toBeTruthy();
-  fireEvent.click(screen.getByRole('button', {name: /암장 지박령/}));
+  fireEvent.click(screen.getByRole('button', {name: /암장 지박령/, expanded: false}));
   expect(within(screen.getByRole('list', {name: '암장 지박령 순위'})).getByText('루키')).toBeTruthy();
-  expect(screen.getByRole('button', {name: /암장 지박령/}).getAttribute('aria-expanded')).toBe('true');
+  expect(screen.getByRole('button', {name: /암장 지박령/, expanded: true}).getAttribute('aria-expanded')).toBe('true');
 });
 
 it('clears the previous account achievements when the active session changes', async () => {
@@ -135,9 +135,9 @@ it('clears the previous account achievements when the active session changes', a
     </SessionContext.Provider>
   );
   const view = render(tree(user));
-  await screen.findByRole('button', {name: /a의 업적/});
+  await screen.findByRole('button', {name: /a의 업적/, pressed: true});
   activeId = 'b';
   view.rerender(tree({...user, id: 'b', username: 'account.b', nickname: '계정 B'}));
-  expect(screen.queryByRole('button', {name: /a의 업적/})).toBeNull();
-  await screen.findByRole('button', {name: /b의 업적/});
+  expect(screen.queryByRole('button', {name: /a의 업적/, pressed: true})).toBeNull();
+  await screen.findByRole('button', {name: /b의 업적/, pressed: true});
 });

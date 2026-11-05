@@ -100,6 +100,7 @@ describe('achievements', () => {
     const [decorated] = decorateMembers(db, base, quarter);
     expect(decorated.featuredAchievement).toMatchObject({id: 'theclimb-red-50', name: '적색경보 해제'});
     expect(decorated.titles.map(x => x.id)).toEqual(['participation', 'red']);
+    expect(decorated.titles[0]).toMatchObject({description: '클라이밍 참여 횟수 1위', quarter});
   });
   it('migrates existing data and never restores intentionally deleted default definitions', async () => {
     const directory = mkdtempSync(join(tmpdir(), 'krew-progression-'));

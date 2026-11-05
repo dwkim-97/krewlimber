@@ -1,5 +1,6 @@
 import {Award, Check, LockKeyhole, Search, Sparkles} from 'lucide-react';
 import {useState} from 'react';
+import {InfoButton} from '@/components/InfoButton';
 import {EmptyState, ErrorNotice, Loading} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
 import {api} from '@/apis/client';
@@ -69,29 +70,34 @@ export function Achievements() {
         <div className="achievement-list" role="group" aria-label="업적 목록">
           {visible.length ? (
             visible.map(item => (
-              <button
-                key={item.id}
-                className={`achievement-row ${item.earned ? 'earned' : 'locked'} ${item.id === selected?.id ? 'selected' : ''}`}
-                onClick={() => setHighlighted(item.id)}
-                aria-pressed={selected?.id === item.id}
-              >
-                <span className="achievement-mark">
-                  {item.earned ? <Award size={22} /> : <LockKeyhole size={19} />}
-                </span>
-                <span className="achievement-row-copy">
-                  <strong>
-                    {item.name}
-                    {item.featured && <span className="featured-chip">대표</span>}
-                  </strong>
-                  <small>{item.description}</small>
-                  <span className="achievement-progress">
-                    <span style={{width: `${Math.min(100, (item.progress / item.target) * 100)}%`}} />
+              <div className="achievement-row-shell" key={item.id}>
+                <button
+                  className={`achievement-row ${item.earned ? 'earned' : 'locked'} ${item.id === selected?.id ? 'selected' : ''}`}
+                  onClick={() => setHighlighted(item.id)}
+                  aria-pressed={selected?.id === item.id}
+                >
+                  <span className="achievement-mark">
+                    {item.earned ? <Award size={22} /> : <LockKeyhole size={19} />}
                   </span>
-                </span>
-                <span className="achievement-row-count">
-                  {item.earned ? <Check size={17} /> : `${item.progress}/${item.target}`}
-                </span>
-              </button>
+                  <span className="achievement-row-copy">
+                    <strong>
+                      {item.name}
+                      {item.featured && <span className="featured-chip">대표</span>}
+                    </strong>
+                    <small>{item.description}</small>
+                    <span className="achievement-progress">
+                      <span style={{width: `${Math.min(100, (item.progress / item.target) * 100)}%`}} />
+                    </span>
+                  </span>
+                  <span className="achievement-row-count">
+                    {item.earned ? <Check size={17} /> : `${item.progress}/${item.target}`}
+                  </span>
+                </button>
+                <InfoButton title={item.name}>
+                  <p className="info-condition">{item.description}</p>
+                  <p>전체 분기의 누적 기록으로 계산합니다. 달성한 업적은 대표로 선택할 수 있습니다.</p>
+                </InfoButton>
+              </div>
             ))
           ) : (
             <p className="list-empty">해당하는 업적이 없어요.</p>
@@ -107,7 +113,13 @@ export function Achievements() {
                 <Award size={58} strokeWidth={1.2} />
                 <Sparkles size={18} />
               </span>
-              <h3>{selected.name}</h3>
+              <div className="achievement-detail-heading">
+                <h3>{selected.name}</h3>
+                <InfoButton title={selected.name}>
+                  <p className="info-condition">{selected.description}</p>
+                  <p>전체 분기의 누적 기록으로 계산합니다. 달성한 업적은 대표로 선택할 수 있습니다.</p>
+                </InfoButton>
+              </div>
               <p>{selected.description}</p>
               <div className="detail-progress">
                 <strong>

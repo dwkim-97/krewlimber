@@ -62,6 +62,7 @@ export interface FeaturedAchievement {
 export interface TitleBadge {
   id: string;
   name: string;
+  description: string;
   quarter: string;
   accent: Accent;
 }

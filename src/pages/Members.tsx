@@ -1,6 +1,7 @@
 import {Award, MapPin, Mountain, Search, Users} from 'lucide-react';
 import {useState} from 'react';
 import {Avatar, EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
+import {InfoButton} from '@/components/InfoButton';
 import {TitleBadgeView} from '@/components/TitleList';
 import {useResource} from '@/hooks/useResource';
 import type {Member} from '@/types';
@@ -62,9 +63,13 @@ export function Members() {
                 ))}
               </div>
               {member.featuredAchievement ? (
-                <div className="member-featured" title={member.featuredAchievement.description}>
+                <div className="member-featured">
                   <Award size={20} />
                   <strong>{member.featuredAchievement.name}</strong>
+                  <InfoButton title={member.featuredAchievement.name}>
+                    <p className="info-condition">{member.featuredAchievement.description}</p>
+                    <p>전체 분기의 누적 기록으로 달성하는 업적입니다.</p>
+                  </InfoButton>
                 </div>
               ) : (
                 <div className="member-featured member-featured-empty">

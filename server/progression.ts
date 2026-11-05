@@ -103,7 +103,13 @@ export function decorateMembers(db: DatabaseSync, members: MemberProfile[], quar
   for (const category of getTitleBoard(db, quarter).categories)
     for (const holder of category.standings.filter(person => person.rank === 1)) {
       const badges = titlesByUser.get(holder.userId) ?? [];
-      badges.push({id: category.id, name: category.name, quarter, accent: category.accent});
+      badges.push({
+        id: category.id,
+        name: category.name,
+        description: category.description,
+        quarter,
+        accent: category.accent,
+      });
       titlesByUser.set(holder.userId, badges);
     }
   const featured = db
