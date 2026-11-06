@@ -596,3 +596,47 @@
 .market-create-page {
   max-width: 980px;
 }
+
+.product-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+.product-image-input {
+  margin: 22px 0;
+}
+.product-image-input small {
+  color: var(--muted);
+}
+.product-image-input summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+  margin: 14px 0;
+}
+.product-image-preview {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 14px 0;
+}
+.product-image-preview img {
+  width: 140px;
+  height: 140px;
+  object-fit: contain;
+  background: #f4f5ed;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.market-detail-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.market-detail-actions .market-back {
+  margin-bottom: 0;
+}

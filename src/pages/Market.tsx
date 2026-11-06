@@ -1,4 +1,16 @@
-import {ArrowLeft, ArrowUpRight, Backpack, Coins, Gift, Plus, Search, Shirt, ShoppingBag, Ticket} from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  Backpack,
+  Coins,
+  Gift,
+  Pencil,
+  Plus,
+  Search,
+  Shirt,
+  ShoppingBag,
+  Ticket,
+} from 'lucide-react';
 import {useRef, useState, type FormEvent} from 'react';
 import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
@@ -72,6 +84,11 @@ export function Market() {
       {state?.productCreated === true && (
         <div className="notice success" role="status">
           상품을 등록했습니다.
+        </div>
+      )}
+      {state?.productUpdated === true && (
+        <div className="notice success" role="status">
+          상품을 수정했습니다.
         </div>
       )}
       <section className="market-intro">
@@ -191,6 +208,7 @@ export function ProductDetail() {
 }
 
 function ProductDetailContent({id}: {id: string}) {
+  const {user} = useSession();
   const product = useResource<{product: Product}>(`/market/products/${id}`);
   const wallet = useResource<Wallet>('/me/wallet');
   const [quantity, setQuantity] = useState(1);
@@ -244,9 +262,16 @@ function ProductDetailContent({id}: {id: string}) {
   }
   return (
     <div className="page-shell market-page">
-      <Link to="/market" className="text-link market-back">
-        <ArrowLeft size={17} /> 마켓으로
-      </Link>
+      <div className="market-detail-actions">
+        <Link to="/market" className="text-link market-back">
+          <ArrowLeft size={17} /> 마켓으로
+        </Link>
+        {user?.role === 'admin' && user.status === 'approved' && (
+          <Link className="button button-outline button-small" to={`/market/${id}/edit`}>
+            <Pencil size={16} /> 상품 수정
+          </Link>
+        )}
+      </div>
       {product.loading ? (
         <Loading />
       ) : product.error ? (

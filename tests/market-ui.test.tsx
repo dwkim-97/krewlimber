@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import {cleanup, fireEvent, render, screen, waitFor} from '@testing-library/react';
+import {cleanup, fireEvent, render as renderView, screen, waitFor} from '@testing-library/react';
+import type {ReactNode} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {afterEach, expect, it, vi} from 'vitest';
 import {Market, ProductDetail} from '../src/pages/Market';
@@ -7,6 +8,13 @@ import {AdminMarket} from '../src/components/AdminMarket';
 import {MyOrders} from '../src/pages/MyOrders';
 import {SessionContext} from '../src/stores/session';
 
+function render(view: ReactNode) {
+  return renderView(
+    <SessionContext.Provider value={{user: null, loading: false, error: '', refresh: async () => null}}>
+      {view}
+    </SessionContext.Provider>
+  );
+}
 const product = {
   id: 'chalk',
   name: '크루 초크백',
@@ -121,9 +129,7 @@ it('uses the all category API value and changes category without retaining the p
   );
   render(
     <MemoryRouter initialEntries={['/market?page=2']}>
-      <SessionContext.Provider value={{user: null, loading: false, error: '', refresh: async () => null}}>
-        <Market />
-      </SessionContext.Provider>
+      <Market />
     </MemoryRouter>
   );
   await screen.findByRole('heading', {name: product.name});

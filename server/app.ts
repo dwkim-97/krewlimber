@@ -1,5 +1,6 @@
 import {randomBytes, randomUUID} from 'node:crypto';
 import type {DatabaseSync} from 'node:sqlite';
+import {resolve} from 'node:path';
 import express, {type ErrorRequestHandler, type RequestHandler} from 'express';
 import {ipKeyGenerator, rateLimit} from 'express-rate-limit';
 import helmet from 'helmet';
@@ -23,6 +24,7 @@ import {currentQuarter, decorateMembers} from './progression';
 import {registerProgressionRoutes} from './progression-routes';
 import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
+import {registerMarketImageRoutes} from './market-images';
 import {usernameSchema as username, passwordSchema as password, nicknameSchema} from './validation';
 
 const profileSchema = z.object({
@@ -51,18 +53,20 @@ export function createApp({
   origin,
   secureCookies,
   trustProxy,
+  uploadsDir = resolve('data/uploads'),
 }: {
   db: DatabaseSync;
   origin: string;
   secureCookies: boolean;
   trustProxy: string | false;
+  uploadsDir?: string;
 }) {
   const app = express();
   app.set('trust proxy', trustProxy);
   app.disable('x-powered-by');
   app.use(
     helmet({
-      contentSecurityPolicy: secureCookies ? {directives: {imgSrc: ["'self'", 'data:', 'https:']}} : false,
+      contentSecurityPolicy: secureCookies ? {directives: {imgSrc: ["'self'", 'data:', 'blob:', 'https:']}} : false,
       strictTransportSecurity: secureCookies ? undefined : false,
     })
   );
@@ -221,6 +225,7 @@ export function createApp({
   });
   registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
+  registerMarketImageRoutes(app, uploadsDir, {member: requireMember, admin: requireAdmin, audit});
   registerProgressionRoutes(app, db, {user: requireUser, member: requireMember, admin: requireAdmin, audit});
   app.get('/api/honors', (req, res) => {
     requireMember(req);
@@ -349,6 +354,14 @@ export function createApp({
   const errorHandler: ErrorRequestHandler = (error: unknown, _req, res, _next) => {
     if (error instanceof ZodError) return void res.status(400).json({error: error.issues[0].message});
     if (error instanceof ApiError) return void res.status(error.status).json({error: error.message});
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'type' in error &&
+      error.type === 'entity.too.large' &&
+      _req.path === '/api/admin/market/images'
+    )
+      return void res.status(413).json({error: '이미지는 5MB 이하로 선택해주세요.'});
     if (
       error instanceof SyntaxError ||
       (typeof error === 'object' && error !== null && 'type' in error && error.type === 'entity.too.large')

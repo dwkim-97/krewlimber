@@ -323,3 +323,28 @@ it('applies a point grant or correction once after its response is lost', async 
   expect(again.body.balance).toBe(200);
   expect(again.body.entries).toHaveLength(2);
 });
+
+it('loads active and stopped products only through the administrator edit endpoint', async () => {
+  const p = await product();
+  expect((await request(app).get(`/api/admin/market/products/${p.id}`)).status).toBe(401);
+  expect((await request(app).get(`/api/admin/market/products/${p.id}`).set('Cookie', member)).status).toBe(403);
+  const loaded = await request(app).get(`/api/admin/market/products/${p.id}`).set('Cookie', admin);
+  expect(loaded.status).toBe(200);
+  expect(loaded.body.product).toMatchObject({id: p.id, active: true, revision: 1});
+  await request(app)
+    .patch(`/api/admin/market/products/${p.id}`)
+    .set('Cookie', admin)
+    .set('Origin', origin)
+    .send({...input, revision: 1, active: false});
+  expect((await request(app).get(`/api/admin/market/products/${p.id}`).set('Cookie', admin)).body.product.active).toBe(
+    false
+  );
+  expect((await request(app).get(`/api/market/products/${p.id}`).set('Cookie', member)).status).toBe(404);
+  const reopened = await request(app)
+    .patch(`/api/admin/market/products/${p.id}`)
+    .set('Cookie', admin)
+    .set('Origin', origin)
+    .send({...input, revision: 2, active: true});
+  expect(reopened.status).toBe(200);
+  expect((await request(app).get(`/api/market/products/${p.id}`).set('Cookie', member)).body.product.active).toBe(true);
+});
