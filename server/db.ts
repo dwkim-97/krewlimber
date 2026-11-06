@@ -1,13 +1,13 @@
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
-import {DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
+import {INITIAL_ACHIEVEMENTS, ADDITIONAL_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
   const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
-  if (version > 5) {
+  if (version > 6) {
     db.close();
     throw new Error('Unsupported database version.');
   }
@@ -85,7 +85,7 @@ export function openDatabase(path: string) {
       const insert = db.prepare(
         'INSERT INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
       );
-      for (const achievement of DEFAULT_ACHIEVEMENTS)
+      for (const achievement of INITIAL_ACHIEVEMENTS)
         insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
       db.exec('PRAGMA user_version = 2;');
     });
@@ -143,6 +143,44 @@ export function openDatabase(path: string) {
       db.exec(
         'ALTER TABLE pointLedger ADD COLUMN requestId TEXT; CREATE UNIQUE INDEX pointLedger_request ON pointLedger(actorId,requestId) WHERE requestId IS NOT NULL; PRAGMA user_version=5;'
       );
+    });
+  if (version < 6)
+    transaction(db, () => {
+      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 6) return;
+      db.exec(`
+        CREATE TEMP TABLE preservedFeatured AS SELECT userId,achievementId FROM featuredAchievements;
+        DROP TABLE featuredAchievements;
+        CREATE TABLE activityStats_v6 (
+          userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, quarter TEXT NOT NULL,
+          metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple','gray')),
+          value INTEGER NOT NULL CHECK(value>=0 AND value<=1000000 AND typeof(value)='integer'),
+          PRIMARY KEY(userId,quarter,metric)
+        );
+        INSERT INTO activityStats_v6 SELECT userId,quarter,metric,value FROM activityStats;
+        DROP TABLE activityStats;
+        ALTER TABLE activityStats_v6 RENAME TO activityStats;
+        CREATE TABLE achievementDefinitions_v6 (
+          id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL,
+          metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple','gray','pointsEarned','pointsSpent')),
+          target INTEGER NOT NULL CHECK(target>0 AND target<=1000000 AND typeof(target)='integer')
+        );
+        INSERT INTO achievementDefinitions_v6(rowid,id,name,description,metric,target)
+          SELECT rowid,id,name,description,metric,target FROM achievementDefinitions;
+        DROP TABLE achievementDefinitions;
+        ALTER TABLE achievementDefinitions_v6 RENAME TO achievementDefinitions;
+        CREATE TABLE featuredAchievements (
+          userId TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+          achievementId TEXT NOT NULL REFERENCES achievementDefinitions(id) ON DELETE CASCADE
+        );
+        INSERT INTO featuredAchievements SELECT userId,achievementId FROM preservedFeatured;
+        DROP TABLE preservedFeatured;
+      `);
+      const insert = db.prepare(
+        'INSERT OR IGNORE INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
+      );
+      for (const achievement of ADDITIONAL_ACHIEVEMENTS)
+        insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
+      db.exec('PRAGMA user_version=6;');
     });
   return db;
 }

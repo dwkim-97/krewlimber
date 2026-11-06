@@ -4,6 +4,7 @@ import type {MarketOrder, Product, Wallet} from '../src/types/boards';
 import type {User} from '../src/types';
 import type {BoardAuthorization} from './board-auth';
 import {ApiError} from './errors';
+import {clearUnearnedFeaturedAchievement} from './progression';
 
 export function pointBalance(db: DatabaseSync, userId: string): number {
   return Number(
@@ -57,6 +58,7 @@ export function adjustPoints(
   db.prepare(
     "INSERT INTO pointLedger(userId,amount,reason,actorId,orderId,kind,createdAt,requestId) VALUES(?,?,?,?,NULL,'grant',?,?)"
   ).run(userId, amount, reason, actorId, new Date().toISOString(), requestId);
+  if (amount < 0) clearUnearnedFeaturedAchievement(db, userId);
   return true;
 }
 export function createMarketOrder(
@@ -124,6 +126,7 @@ export function changeOrder(
     ).run(order.userId, order.total, `교환 취소 · ${order.productName}`, actor.id, id, now);
   }
   db.prepare('UPDATE marketOrders SET status=?,updatedAt=? WHERE id=?').run(status, now, id);
+  if (status === 'cancelled') clearUnearnedFeaturedAchievement(db, order.userId);
   audit(actor.id, id, `order.${status}`, {total: order.total});
   return getOrder(db, id);
 }

@@ -29,20 +29,22 @@ export interface Member extends MemberProfile {
   featuredAchievement: FeaturedAchievement | null;
 }
 
-export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple';
+export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple' | 'gray';
 export type ActivityCounts = Record<ActivityMetric, number>;
-export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple';
+export type PointMetric = 'pointsEarned' | 'pointsSpent';
+export type ProgressMetric = ActivityMetric | PointMetric;
+export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple' | 'gray';
 
-export interface MetricDefinition {
-  id: ActivityMetric;
+export interface MetricDefinition<T extends ProgressMetric = ProgressMetric> {
+  id: T;
   label: string;
-  unit: '회' | '개';
+  unit: '회' | '개' | 'P';
 }
 export interface AchievementDefinition {
   id: string;
   name: string;
   description: string;
-  metric: ActivityMetric;
+  metric: ProgressMetric;
   target: number;
 }
 export interface AchievementProgress extends AchievementDefinition {
@@ -76,8 +78,8 @@ export interface TitleCategory {
   id: string;
   name: string;
   description: string;
-  metric: ActivityMetric;
-  unit: '회' | '개';
+  metric: ProgressMetric;
+  unit: '회' | '개' | 'P';
   accent: Accent;
   standings: TitleStanding[];
 }
@@ -96,7 +98,8 @@ export interface ActivityMember {
 export interface AdminProgression {
   quarter: string;
   quarters: string[];
-  metrics: MetricDefinition[];
+  metrics: MetricDefinition<ActivityMetric>[];
+  achievementMetrics: MetricDefinition[];
   users: ActivityMember[];
   achievements: AchievementDefinition[];
 }
