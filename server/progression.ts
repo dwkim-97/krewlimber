@@ -1,18 +1,18 @@
 import type {Database} from './database';
 import type {
   AchievementCollection,
-  AchievementDefinition,
   ActivityCounts,
   ActivityMetric,
   AdminProgression,
-  FeaturedAchievement,
   Member,
   MemberProfile,
+  Role,
   TitleBadge,
   TitleBoard,
   TitleStanding,
 } from '../src/types';
 import {ACTIVITY_METRICS, EMPTY_COUNTS, TITLE_DEFINITIONS} from '../src/consts/progression';
+import {achievementDefinitions, conditionProgress} from './achievement-conditions';
 import {ApiError} from './errors';
 
 export function currentQuarter(date: Date): string {
@@ -57,9 +57,8 @@ export async function getTitleBoard(db: Database, quarter: string): Promise<Titl
 }
 
 export async function getAchievements(db: Database, userId: string): Promise<AchievementCollection> {
-  const definitions = (await db
-    .prepare('SELECT id,name,description,metric,target FROM achievementDefinitions ORDER BY rowid')
-    .all()) as unknown as AchievementDefinition[];
+  const definitions = await achievementDefinitions(db);
+  const recorded = new Map((await conditionProgress(db, userId)).map(r => [r.achievementId, Number(r.value)]));
   const totals = (await db
     .prepare('SELECT metric,SUM(value) AS value FROM activityStats WHERE userId=? GROUP BY metric')
     .all(userId)) as unknown as {metric: ActivityMetric; value: number}[];
@@ -68,7 +67,7 @@ export async function getAchievements(db: Database, userId: string): Promise<Ach
   const selected = (await db.prepare('SELECT achievementId FROM featuredAchievements WHERE userId=?').get(userId)) as
     {achievementId: string} | undefined;
   const achievements = definitions.map(definition => {
-    const progress = counts[definition.metric];
+    const progress = definition.condition ? (recorded.get(definition.id) ?? 0) : counts[definition.metric];
     const earned = progress >= definition.target;
     return {...definition, progress, earned, featured: earned && selected?.achievementId === definition.id};
   });
@@ -102,7 +101,11 @@ export async function setActivityCounts(db: Database, userId: string, quarter: s
     await db.prepare('DELETE FROM featuredAchievements WHERE userId=?').run(userId);
 }
 
-export async function decorateMembers(db: Database, members: MemberProfile[], quarter: string): Promise<Member[]> {
+export async function decorateMembers(
+  db: Database,
+  members: (MemberProfile & {role?: Role; points?: number; level?: number})[],
+  quarter: string
+): Promise<Member[]> {
   const titlesByUser = new Map<string, TitleBadge[]>();
   for (const category of (await getTitleBoard(db, quarter)).categories)
     for (const holder of category.standings.filter(person => person.rank === 1)) {
@@ -116,19 +119,34 @@ export async function decorateMembers(db: Database, members: MemberProfile[], qu
       });
       titlesByUser.set(holder.userId, badges);
     }
-  const featured = (await db
+  const featured = await db
     .prepare(
-      `SELECT f.userId,d.id,d.name,d.description FROM featuredAchievements f
-    JOIN achievementDefinitions d ON d.id=f.achievementId
-    LEFT JOIN activityStats a ON a.userId=f.userId AND a.metric=d.metric
-    GROUP BY f.userId,d.id HAVING COALESCE(SUM(a.value),0)>=d.target`
+      'SELECT f.userId,d.id,d.name,d.description,d.metric,d.target,c.achievementId AS conditionId FROM featuredAchievements f JOIN achievementDefinitions d ON d.id=f.achievementId LEFT JOIN achievementConditions c ON c.achievementId=d.id'
     )
-    .all()) as unknown as (FeaturedAchievement & {userId: string})[];
+    .all();
+  const totals = await db
+    .prepare(
+      'SELECT a.userId,a.metric,SUM(a.value) AS value FROM activityStats a JOIN featuredAchievements f ON f.userId=a.userId GROUP BY a.userId,a.metric'
+    )
+    .all();
+  const recorded = await conditionProgress(db);
   const featuredByUser = new Map(
-    featured.map(row => [row.userId, {id: row.id, name: row.name, description: row.description}])
+    featured
+      .filter(
+        f =>
+          Number(
+            f.conditionId
+              ? (recorded.find(r => r.userId === f.userId && r.achievementId === f.id)?.value ?? 0)
+              : (totals.find(r => r.userId === f.userId && r.metric === f.metric)?.value ?? 0)
+          ) >= Number(f.target)
+      )
+      .map(f => [String(f.userId), {id: String(f.id), name: String(f.name), description: String(f.description)}])
   );
   return members.map(member => ({
     ...member,
+    role: member.role ?? 'member',
+    points: Number(member.points ?? 0),
+    level: member.level ?? 0,
     titles: titlesByUser.get(member.id) ?? [],
     featuredAchievement: featuredByUser.get(member.id) ?? null,
   }));
@@ -156,8 +174,6 @@ export async function getAdminProgression(db: Database, quarter: string): Promis
     quarters: await quarters(db, quarter),
     metrics: ACTIVITY_METRICS,
     users: users.map(user => ({...user, counts: byUser.get(user.id) ?? {...EMPTY_COUNTS}})),
-    achievements: (await db
-      .prepare('SELECT id,name,description,metric,target FROM achievementDefinitions ORDER BY rowid')
-      .all()) as unknown as AchievementDefinition[],
+    achievements: await achievementDefinitions(db),
   };
 }

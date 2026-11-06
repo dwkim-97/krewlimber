@@ -5,14 +5,15 @@ import {useResource} from '@/hooks/useResource';
 import type {TitleBoard} from '@/types';
 import {quarterLabel} from '@/consts/progression';
 
-export function HallOfFame() {
+export function HallOfFame({embedded = false}: {embedded?: boolean} = {}) {
   const [quarter, setQuarter] = useState('');
   const {data, loading, error, reload} = useResource<TitleBoard>(
     `/titles${quarter ? `?quarter=${encodeURIComponent(quarter)}` : ''}`
   );
   return (
-    <div className="page-shell">
-      <PageHeading title="명예의 전당">
+    <div className={embedded ? 'hall-of-fame-content' : 'page-shell'}>
+      <div className="hall-of-fame-heading">
+        {!embedded && <PageHeading title="명예의 전당" />}
         <label className="quarter-select">
           <span>분기</span>
           <select
@@ -27,7 +28,7 @@ export function HallOfFame() {
             ))}
           </select>
         </label>
-      </PageHeading>
+      </div>
       {loading ? (
         <Loading />
       ) : error ? (

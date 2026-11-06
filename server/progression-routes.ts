@@ -1,4 +1,3 @@
-import {randomUUID} from 'node:crypto';
 import type {Database} from './database';
 import type {Express, Request} from 'express';
 import {z} from 'zod';
@@ -15,7 +14,6 @@ import {
 } from './progression';
 
 const quarterSchema = z.string().regex(/^\d{4}-Q[1-4]$/, '올바른 분기를 선택해주세요.');
-const metricSchema = z.enum(['participation', 'hosted', 'attended', 'red', 'pink', 'purple']);
 const count = z.number().int().min(0).max(1000000);
 const countsSchema = z
   .object({participation: count, hosted: count, attended: count, red: count, pink: count, purple: count})
@@ -65,28 +63,6 @@ export function registerProgressionRoutes(
       await authorization.audit(actor.id, userId, 'activity.update', input);
     });
     res.json({ok: true});
-  });
-  app.post('/api/admin/achievements', async (req, res) => {
-    const actor = await authorization.admin(req);
-    const input = z
-      .object({
-        name: z.string().trim().min(2).max(40),
-        description: z.string().trim().min(1).max(160),
-        metric: metricSchema,
-        target: z.number().int().min(1).max(1000000),
-      })
-      .parse(req.body);
-    if (await db.prepare('SELECT id FROM achievementDefinitions WHERE name=?').get(input.name))
-      throw new ApiError(409, '이미 같은 이름의 업적이 있습니다.');
-    const achievement = {id: randomUUID(), ...input};
-    await transaction(db, async () => {
-      await authorization.admin(req);
-      await db
-        .prepare('INSERT INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)')
-        .run(achievement.id, input.name, input.description, input.metric, input.target);
-      await authorization.audit(actor.id, achievement.id, 'achievement.create', input);
-    });
-    res.status(201).json({achievement});
   });
   app.delete('/api/admin/achievements/:id', async (req, res) => {
     const actor = await authorization.admin(req);

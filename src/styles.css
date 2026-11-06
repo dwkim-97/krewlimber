@@ -2562,7 +2562,7 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
 }
 
-@media (min-width: 821px) and (max-width: 1100px) {
+@media (min-width: 821px) and (max-width: 1380px) {
   .menu-toggle {
     display: grid;
     place-items: center;
