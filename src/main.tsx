@@ -10,6 +10,7 @@ import {Members} from '@/pages/Members';
 import {Notices, NoticeDetail, NoticeEditor} from '@/pages/Notices';
 import {Market, ProductDetail} from '@/pages/Market';
 import {MyOrders} from '@/pages/MyOrders';
+import {ProductCreate, ProductEdit} from '@/pages/ProductCreate';
 import {Layout} from '@/components/Layout';
 import {Protected} from '@/components/Protected';
 import {EmptyState} from '@/components/ui';
@@ -67,6 +68,22 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <Protected access="member">
                   <Market />
+                </Protected>
+              }
+            />
+            <Route
+              path="market/new"
+              element={
+                <Protected access="admin">
+                  <ProductCreate />
+                </Protected>
+              }
+            />
+            <Route
+              path="market/:id/edit"
+              element={
+                <Protected access="admin">
+                  <ProductEdit />
                 </Protected>
               }
             />

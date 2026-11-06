@@ -126,6 +126,10 @@ export function registerMarketRoutes(app: Express, db: DatabaseSync, auth: Board
     auth.admin(req);
     res.json(listProducts(req, true));
   });
+  app.get('/api/admin/market/products/:id', (req, res) => {
+    auth.admin(req);
+    res.json({product: getProduct(db, String(req.params.id))});
+  });
   app.post('/api/admin/market/products', (req, res) => {
     const actor = auth.admin(req);
     const p = productSchema.parse(req.body);

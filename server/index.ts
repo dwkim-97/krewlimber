@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {resolve} from 'node:path';
+import {dirname, resolve} from 'node:path';
 import express from 'express';
 import {config} from 'dotenv';
 import {createApp} from './app';
@@ -17,8 +17,13 @@ if (!origin || (production && !origin.startsWith('https://')))
   throw new Error('Production requires an HTTPS APP_ORIGIN.');
 if (new URL(origin).origin !== origin)
   throw new Error('APP_ORIGIN must be an origin without a trailing slash or path.');
-const db = openDatabase(process.env.DATABASE_PATH ?? './data/krewlimber.sqlite');
-const app = createApp({db, origin, secureCookies: production, trustProxy});
+const databasePath = process.env.DATABASE_PATH ?? './data/krewlimber.sqlite';
+const db = openDatabase(databasePath);
+const uploadsDir = resolve(
+  process.env.UPLOADS_DIR ??
+    (databasePath === ':memory:' ? './data/uploads' : resolve(dirname(databasePath), 'uploads'))
+);
+const app = createApp({db, origin, secureCookies: production, trustProxy, uploadsDir});
 
 if (production) {
   const html = renderSiteMetadata(readFileSync(resolve('dist/index.html'), 'utf8'), origin);

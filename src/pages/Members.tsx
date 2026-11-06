@@ -49,52 +49,58 @@ export function Members() {
       ) : error ? (
         <ErrorNotice message={error} retry={reload} />
       ) : members.length ? (
-        <div className="members-grid">
+        <ul className="members-list" aria-label="멤버 목록" role="list">
           {members.map((member, index) => (
-            <article className="member-card member-card-decorated" key={member.id}>
-              <div className="member-card-top">
+            <li className="member-row" key={member.id}>
+              <div className="member-row-profile">
                 <Avatar name={member.nickname} index={index} />
-                <span className="grade-tag">{member.grade}</span>
+                <div className="member-row-copy">
+                  <div className="member-row-heading">
+                    <h3>{member.nickname}</h3>
+                    <span className="grade-tag">{member.grade}</span>
+                  </div>
+                  {member.bio && <p className="member-bio">{member.bio}</p>}
+                  {(member.location || member.gym) && (
+                    <div className="member-meta">
+                      {member.location && (
+                        <span>
+                          <MapPin size={14} />
+                          {member.location}
+                        </span>
+                      )}
+                      {member.gym && (
+                        <span>
+                          <Mountain size={14} />
+                          {member.gym}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="member-name">
-                <h3>{member.nickname}</h3>
+              <div className="member-row-badges">
                 {member.titles.map(title => (
                   <TitleBadgeView key={title.id} title={title} />
                 ))}
-              </div>
-              {member.featuredAchievement ? (
-                <div className="member-featured">
-                  <Award size={20} />
-                  <strong>{member.featuredAchievement.name}</strong>
-                  <InfoButton title={member.featuredAchievement.name}>
-                    <p className="info-condition">{member.featuredAchievement.description}</p>
-                    <p>전체 분기의 누적 기록으로 달성하는 업적입니다.</p>
-                  </InfoButton>
-                </div>
-              ) : (
-                <div className="member-featured member-featured-empty">
-                  <Award size={18} />
-                  <span>선택한 대표 업적 없음</span>
-                </div>
-              )}
-              {member.bio && <p className="member-bio">{member.bio}</p>}
-              <div className="member-meta">
-                {member.location && (
-                  <span>
-                    <MapPin size={14} />
-                    {member.location}
-                  </span>
-                )}
-                {member.gym && (
-                  <span>
-                    <Mountain size={14} />
-                    {member.gym}
-                  </span>
+                {member.featuredAchievement ? (
+                  <div className="member-featured">
+                    <Award size={20} />
+                    <strong>{member.featuredAchievement.name}</strong>
+                    <InfoButton title={member.featuredAchievement.name}>
+                      <p className="info-condition">{member.featuredAchievement.description}</p>
+                      <p>전체 분기의 누적 기록으로 달성하는 업적입니다.</p>
+                    </InfoButton>
+                  </div>
+                ) : (
+                  <div className="member-featured member-featured-empty">
+                    <Award size={18} />
+                    <span>선택한 대표 업적 없음</span>
+                  </div>
                 )}
               </div>
-            </article>
+            </li>
           ))}
-        </div>
+        </ul>
       ) : (
         <EmptyState title="검색 결과가 없어요" description="검색어나 난이도를 바꿔보세요.">
           <button
