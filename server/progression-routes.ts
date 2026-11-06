@@ -12,13 +12,24 @@ import {
   getAdminProgression,
   setFeaturedAchievement,
   setActivityCounts,
+  clearUnearnedFeaturedAchievement,
 } from './progression';
 
 const quarterSchema = z.string().regex(/^\d{4}-Q[1-4]$/, '올바른 분기를 선택해주세요.');
-const metricSchema = z.enum(['participation', 'hosted', 'attended', 'red', 'pink', 'purple']);
+const metricSchema = z.enum([
+  'participation',
+  'hosted',
+  'attended',
+  'red',
+  'pink',
+  'purple',
+  'gray',
+  'pointsEarned',
+  'pointsSpent',
+]);
 const count = z.number().int().min(0).max(1000000);
 const countsSchema = z
-  .object({participation: count, hosted: count, attended: count, red: count, pink: count, purple: count})
+  .object({participation: count, hosted: count, attended: count, red: count, pink: count, purple: count, gray: count})
   .strict();
 
 export function registerProgressionRoutes(
@@ -86,6 +97,26 @@ export function registerProgressionRoutes(
       authorization.audit(actor.id, achievement.id, 'achievement.create', input);
     });
     res.status(201).json({achievement});
+  });
+  app.patch('/api/admin/achievements/:id', (req, res) => {
+    const actor = authorization.admin(req);
+    const id = String(req.params.id);
+    const input = z
+      .object({description: z.string().trim().min(1).max(160), target: z.number().int().min(1).max(1000000)})
+      .strict()
+      .parse(req.body);
+    transaction(db, () => {
+      const updated = db
+        .prepare('UPDATE achievementDefinitions SET description=?,target=? WHERE id=?')
+        .run(input.description, input.target, id);
+      if (!updated.changes) throw new ApiError(404, '업적을 찾을 수 없습니다.');
+      const selected = db.prepare('SELECT userId FROM featuredAchievements WHERE achievementId=?').all(id) as {
+        userId: string;
+      }[];
+      for (const row of selected) clearUnearnedFeaturedAchievement(db, row.userId);
+      authorization.audit(actor.id, id, 'achievement.update', input);
+    });
+    res.json({ok: true});
   });
   app.delete('/api/admin/achievements/:id', (req, res) => {
     const actor = authorization.admin(req);

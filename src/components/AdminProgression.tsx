@@ -68,6 +68,28 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
       setBusy(false);
     }
   }
+  async function updateGoal(event: FormEvent<HTMLFormElement>, id: string) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    setBusy(true);
+    setError('');
+    setMessage('');
+    try {
+      await api(`/admin/achievements/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          description: String(form.get('description') ?? '').trim(),
+          target: Number(form.get('target')),
+        }),
+      });
+      resource.reload();
+      setMessage('업적 조건을 수정했습니다.');
+    } catch (error) {
+      setError(error instanceof Error ? error.message : '업적 조건을 수정하지 못했습니다.');
+    } finally {
+      setBusy(false);
+    }
+  }
   async function remove(id: string, name: string) {
     if (!window.confirm(`“${name}” 업적을 삭제할까요? 회원의 대표 선택도 해제됩니다.`)) return;
     setBusy(true);
@@ -201,7 +223,7 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                 <label>
                   기준
                   <select name="metric">
-                    {data.metrics.map(metric => (
+                    {data.achievementMetrics.map(metric => (
                       <option key={metric.id} value={metric.id}>
                         {metric.label}
                       </option>
@@ -225,6 +247,40 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                 <div>
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
+                  <details className="achievement-goal-editor">
+                    <summary>조건 수정</summary>
+                    <form
+                      key={`${item.id}:${item.target}:${item.description}`}
+                      onSubmit={event => updateGoal(event, item.id)}
+                    >
+                      <label>
+                        설명
+                        <input
+                          aria-label={`${item.name} 설명`}
+                          name="description"
+                          defaultValue={item.description}
+                          required
+                          maxLength={160}
+                        />
+                      </label>
+                      <label>
+                        목표 수량
+                        <input
+                          aria-label={`${item.name} 목표 수량`}
+                          type="number"
+                          name="target"
+                          defaultValue={item.target}
+                          required
+                          min={1}
+                          max={1000000}
+                          step={1}
+                        />
+                      </label>
+                      <button className="button button-outline button-small" disabled={busy}>
+                        조건 저장
+                      </button>
+                    </form>
+                  </details>
                 </div>
                 <button
                   className="icon-button danger"

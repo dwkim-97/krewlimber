@@ -18,7 +18,7 @@ import type {ActivityCounts, MemberProfile} from '../src/types';
 
 const password = 'progression test passphrase';
 const origin = 'http://localhost:4173';
-const zero: ActivityCounts = {participation: 0, hosted: 0, attended: 0, red: 0, pink: 0, purple: 0};
+const zero: ActivityCounts = {participation: 0, hosted: 0, attended: 0, red: 0, pink: 0, purple: 0, gray: 0};
 let db: ReturnType<typeof openDatabase>;
 beforeEach(() => {
   db = openDatabase(':memory:');
@@ -120,7 +120,7 @@ describe('achievements', () => {
       expect(persistent.prepare("SELECT nickname FROM users WHERE id='old'").get()).toMatchObject({
         nickname: '기존회원',
       });
-      expect(persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 8});
+      expect(persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 15});
       persistent.prepare("DELETE FROM achievementDefinitions WHERE id='theclimb-red-50'").run();
       persistent.close();
       persistent = openDatabase(file);
@@ -226,4 +226,22 @@ describe('progression API', () => {
         .status
     ).toBe(400);
   });
+});
+
+it('renames the purple title and awards a quarterly gray title to all positive active leaders', async () => {
+  const a = await member('gray.a');
+  const b = await member('gray.b');
+  const inactive = await member('gray.inactive', 'suspended');
+  record(a.id, '2026-Q4', {...zero, gray: 5});
+  record(b.id, '2026-Q4', {...zero, gray: 5});
+  record(inactive.id, '2026-Q4', {...zero, gray: 999});
+  record(a.id, '2026-Q3', {...zero, gray: 99});
+  const board = getTitleBoard(db, '2026-Q4');
+  expect(board.categories.find(x => x.id === 'purple')!.name).toBe('보라 클래스');
+  const title = board.categories.find(x => x.id === 'gray')!;
+  expect(title.name).toBe('세계관 최강자');
+  expect(title.standings.map(x => [x.userId, x.value, x.rank])).toEqual([
+    [a.id, 5, 1],
+    [b.id, 5, 1],
+  ]);
 });

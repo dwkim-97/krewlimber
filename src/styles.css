@@ -1644,6 +1644,10 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   --accent: #7759a6;
   --accent-bg: #eee4f8;
 }
+.accent-gray {
+  --accent: #68717d;
+  --accent-bg: #e7eaf0;
+}
 .title-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2667,4 +2671,20 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   .member-row-heading h3 {
     font-size: 18px;
   }
+}
+
+.admin-achievement-list article > div {
+  min-width: 0;
+  flex: 1;
+}
+.achievement-goal-editor {
+  margin-top: 14px;
+}
+.achievement-goal-editor summary {
+  cursor: pointer;
+  font-size: 11px;
+  color: var(--muted);
+}
+.achievement-goal-editor form {
+  margin-top: 16px;
 }

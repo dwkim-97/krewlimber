@@ -4,6 +4,7 @@ import type {
   AchievementDefinition,
   ActivityCounts,
   ActivityMetric,
+  ProgressMetric,
   AdminProgression,
   FeaturedAchievement,
   Member,
@@ -12,8 +13,9 @@ import type {
   TitleBoard,
   TitleStanding,
 } from '../src/types';
-import {ACTIVITY_METRICS, EMPTY_COUNTS, TITLE_DEFINITIONS} from '../src/consts/progression';
+import {ACTIVITY_METRICS, PROGRESSION_METRICS, EMPTY_COUNTS, TITLE_DEFINITIONS} from '../src/consts/progression';
 import {ApiError} from './errors';
+import {getPointCounts, pointQuarters} from './point-progress';
 
 export function currentQuarter(date: Date): string {
   const parts = new Intl.DateTimeFormat('en', {
@@ -28,7 +30,9 @@ export function currentQuarter(date: Date): string {
 
 function quarters(db: DatabaseSync, selected: string) {
   const stored = db.prepare('SELECT DISTINCT quarter FROM activityStats').all() as {quarter: string}[];
-  return [...new Set([selected, currentQuarter(new Date()), ...stored.map(row => row.quarter)])].sort().reverse();
+  return [...new Set([selected, currentQuarter(new Date()), ...stored.map(row => row.quarter), ...pointQuarters(db)])]
+    .sort()
+    .reverse();
 }
 
 export function getTitleBoard(db: DatabaseSync, quarter: string): TitleBoard {
@@ -38,12 +42,23 @@ export function getTitleBoard(db: DatabaseSync, quarter: string): TitleBoard {
     JOIN users u ON u.id=a.userId WHERE a.quarter=? AND u.status='approved' AND a.value>0
     ORDER BY a.value DESC,u.nickname COLLATE NOCASE ASC,u.id ASC`
     )
-    .all(quarter) as unknown as {userId: string; nickname: string; metric: ActivityMetric; value: number}[];
+    .all(quarter) as unknown as {userId: string; nickname: string; metric: ProgressMetric; value: number}[];
+  const points = getPointCounts(db, quarter, null);
+  const approved = db
+    .prepare("SELECT id,nickname FROM users WHERE status='approved' ORDER BY nickname COLLATE NOCASE,id")
+    .all() as {id: string; nickname: string}[];
+  for (const person of approved) {
+    const counts = points.get(person.id);
+    if (!counts) continue;
+    for (const metric of ['pointsEarned', 'pointsSpent'] as const)
+      if (counts[metric] > 0)
+        records.push({userId: person.id, nickname: person.nickname, metric, value: counts[metric]});
+  }
   return {
     quarter,
     quarters: quarters(db, quarter),
     categories: TITLE_DEFINITIONS.map(definition => {
-      const matching = records.filter(record => record.metric === definition.metric);
+      const matching = records.filter(record => record.metric === definition.metric).sort((a, b) => b.value - a.value);
       let rank = 0;
       let previous = -1;
       const standings: TitleStanding[] = matching.map((record, index) => {
@@ -63,7 +78,8 @@ export function getAchievements(db: DatabaseSync, userId: string): AchievementCo
   const totals = db
     .prepare('SELECT metric,SUM(value) AS value FROM activityStats WHERE userId=? GROUP BY metric')
     .all(userId) as unknown as {metric: ActivityMetric; value: number}[];
-  const counts = {...EMPTY_COUNTS};
+  const points = getPointCounts(db, null, userId).get(userId);
+  const counts = {...EMPTY_COUNTS, pointsEarned: points?.pointsEarned ?? 0, pointsSpent: points?.pointsSpent ?? 0};
   for (const row of totals) counts[row.metric] = row.value;
   const selected = db.prepare('SELECT achievementId FROM featuredAchievements WHERE userId=?').get(userId) as
     {achievementId: string} | undefined;
@@ -94,8 +110,11 @@ export function setActivityCounts(db: DatabaseSync, userId: string, quarter: str
   const upsert = db.prepare(`INSERT INTO activityStats(userId,quarter,metric,value) VALUES(?,?,?,?)
     ON CONFLICT(userId,quarter,metric) DO UPDATE SET value=excluded.value`);
   for (const metric of ACTIVITY_METRICS) upsert.run(userId, quarter, metric.id, counts[metric.id]);
-  const collection = getAchievements(db, userId);
-  if (!collection.featuredAchievementId) db.prepare('DELETE FROM featuredAchievements WHERE userId=?').run(userId);
+  clearUnearnedFeaturedAchievement(db, userId);
+}
+export function clearUnearnedFeaturedAchievement(db: DatabaseSync, userId: string) {
+  if (!getAchievements(db, userId).featuredAchievementId)
+    db.prepare('DELETE FROM featuredAchievements WHERE userId=?').run(userId);
 }
 
 export function decorateMembers(db: DatabaseSync, members: MemberProfile[], quarter: string): Member[] {
@@ -114,15 +133,27 @@ export function decorateMembers(db: DatabaseSync, members: MemberProfile[], quar
     }
   const featured = db
     .prepare(
-      `SELECT f.userId,d.id,d.name,d.description FROM featuredAchievements f
+      `SELECT f.userId,d.id,d.name,d.description,d.metric,d.target,COALESCE(SUM(a.value),0) AS progress FROM featuredAchievements f
     JOIN achievementDefinitions d ON d.id=f.achievementId
     LEFT JOIN activityStats a ON a.userId=f.userId AND a.metric=d.metric
-    GROUP BY f.userId,d.id HAVING COALESCE(SUM(a.value),0)>=d.target`
+    GROUP BY f.userId,d.id`
     )
-    .all() as unknown as (FeaturedAchievement & {userId: string})[];
-  const featuredByUser = new Map(
-    featured.map(row => [row.userId, {id: row.id, name: row.name, description: row.description}])
-  );
+    .all() as unknown as (FeaturedAchievement & {
+    userId: string;
+    metric: ProgressMetric;
+    target: number;
+    progress: number;
+  })[];
+  const points = getPointCounts(db, null, null);
+  const featuredByUser = new Map<string, FeaturedAchievement>();
+  for (const row of featured) {
+    const progress =
+      row.metric === 'pointsEarned' || row.metric === 'pointsSpent'
+        ? (points.get(row.userId)?.[row.metric] ?? 0)
+        : row.progress;
+    if (progress >= row.target)
+      featuredByUser.set(row.userId, {id: row.id, name: row.name, description: row.description});
+  }
   return members.map(member => ({
     ...member,
     titles: titlesByUser.get(member.id) ?? [],
@@ -149,6 +180,7 @@ export function getAdminProgression(db: DatabaseSync, quarter: string): AdminPro
     quarter,
     quarters: quarters(db, quarter),
     metrics: ACTIVITY_METRICS,
+    achievementMetrics: PROGRESSION_METRICS,
     users: users.map(user => ({...user, counts: byUser.get(user.id) ?? {...EMPTY_COUNTS}})),
     achievements: db
       .prepare('SELECT id,name,description,metric,target FROM achievementDefinitions ORDER BY rowid')

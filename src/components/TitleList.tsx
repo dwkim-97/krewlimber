@@ -1,17 +1,43 @@
-import {ChevronDown, Crown, Flame, Mountain, Sparkles, Zap} from 'lucide-react';
+import {
+  ChevronDown,
+  Coins,
+  Crown,
+  Flame,
+  Mountain,
+  ShoppingBag,
+  Sparkles,
+  Users,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import {useState} from 'react';
 import {InfoButton} from '@/components/InfoButton';
-import type {TitleBadge, TitleCategory} from '@/types';
+import type {ProgressMetric, TitleBadge, TitleCategory} from '@/types';
 import {quarterLabel} from '@/consts/progression';
 
-function TitleConditions({description, quarter}: {description: string; quarter: string | null}) {
+const titleIcons: Record<ProgressMetric, LucideIcon> = {
+  participation: Mountain,
+  hosted: Zap,
+  attended: Users,
+  red: Flame,
+  pink: Flame,
+  purple: Flame,
+  gray: Flame,
+  pointsEarned: Coins,
+  pointsSpent: ShoppingBag,
+};
+function TitleConditions({id, description, quarter}: {id: string; description: string; quarter: string | null}) {
   return (
     <>
       <p className="info-condition">{description}</p>
       <p>
-        {quarter ? quarterLabel(quarter) : '해당 분기'}의 승인된 회원 기록을 비교해 선정합니다. 0건은 제외하며, 동률이면
-        공동으로 칭호를 받습니다.
+        {quarter ? quarterLabel(quarter) : '해당 분기'}의 승인된 회원 기록을 비교해 선정합니다. 0인 기록은 제외하며,
+        동률이면 공동으로 칭호를 받습니다.
       </p>
+      {id === 'pointsEarned' && (
+        <p>분기 내 지급 포인트에서 차감 정정을 뺀 값입니다. 환불은 획득에 포함하지 않습니다.</p>
+      )}
+      {id === 'pointsSpent' && <p>분기 내 신청한 교환의 포인트 합계입니다. 취소된 교환과 환불은 제외합니다.</p>}
     </>
   );
 }
@@ -23,7 +49,7 @@ export function TitleBadgeView({title}: {title: TitleBadge}) {
       <span>{title.name}</span>
       <Sparkles className="title-badge-spark" size={12} />
       <InfoButton title={title.name}>
-        <TitleConditions description={title.description} quarter={title.quarter} />
+        <TitleConditions id={title.id} description={title.description} quarter={title.quarter} />
       </InfoButton>
     </span>
   );
@@ -35,7 +61,7 @@ export function TitleList({categories}: {categories: TitleCategory[]}) {
     <div className="title-list">
       {categories.map(category => {
         const leaders = category.standings.filter(person => person.rank === 1);
-        const Icon = category.id === 'hosted' ? Zap : category.id === 'participation' ? Mountain : Flame;
+        const Icon = titleIcons[category.metric];
         const open = expanded === category.id;
         return (
           <article className={`title-tile accent-${category.accent}`} key={category.id}>
@@ -57,13 +83,13 @@ export function TitleList({categories}: {categories: TitleCategory[]}) {
                   </strong>
                   <small>
                     {category.description}
-                    {leaders.length ? ` · ${leaders[0].value}${category.unit}` : ''}
+                    {leaders.length ? ` · ${leaders[0].value.toLocaleString('ko-KR')}${category.unit}` : ''}
                   </small>
                 </span>
                 <ChevronDown size={17} className={open ? 'chevron-open' : ''} />
               </button>
               <InfoButton title={category.name}>
-                <TitleConditions description={category.description} quarter={null} />
+                <TitleConditions id={category.id} description={category.description} quarter={null} />
               </InfoButton>
             </div>
             {open && (
@@ -77,7 +103,7 @@ export function TitleList({categories}: {categories: TitleCategory[]}) {
                         </span>
                         <strong>{person.nickname}</strong>
                         <span>
-                          {person.value}
+                          {person.value.toLocaleString('ko-KR')}
                           {category.unit}
                         </span>
                       </li>
