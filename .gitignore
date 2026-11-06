@@ -8,3 +8,5 @@ deploy/.env.production
 .DS_Store
 .vercel
 .env*
+
+.vercel-build/

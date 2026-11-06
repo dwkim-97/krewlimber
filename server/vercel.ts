@@ -1,6 +1,6 @@
-import {createApp} from '../server/app';
-import {openPostgresDatabase} from '../server/database';
-import {supabaseImageStorage} from '../server/image-storage';
+import {createApp} from './app';
+import {openPostgresDatabase} from './database';
+import {supabaseImageStorage} from './image-storage';
 
 const origin = process.env.APP_ORIGIN;
 if (!origin || new URL(origin).origin !== origin || !origin.startsWith('https://'))
