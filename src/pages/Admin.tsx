@@ -102,7 +102,9 @@ function AdminMembers() {
                     {member.nickname}
                     {member.id === user?.id && <small>나</small>}
                   </h3>
-                  <span>@{member.username}</span>
+                  <span>
+                    {member.fullName ? `${member.fullName} · ` : ''}@{member.username}
+                  </span>
                 </div>
                 <span className={`status-tag status-${member.status}`}>{STATUS_LABELS[member.status]}</span>
               </div>

@@ -14,7 +14,8 @@ export function Members() {
   const members =
     data?.members.filter(
       member =>
-        member.nickname.toLowerCase().includes(query.trim().toLowerCase()) &&
+        (member.nickname.toLowerCase().includes(query.trim().toLowerCase()) ||
+          member.fullName?.includes(query.trim())) &&
         (grade === 'all' || member.grade === grade)
     ) ?? [];
   return (
@@ -31,8 +32,8 @@ export function Members() {
           <input
             value={query}
             onChange={event => setQuery(event.target.value)}
-            placeholder="닉네임 검색"
-            aria-label="닉네임으로 회원 검색"
+            placeholder="닉네임·한글 이름 검색"
+            aria-label="닉네임 또는 한글 이름으로 회원 검색"
           />
         </label>
         <label className="filter-select">
@@ -57,6 +58,7 @@ export function Members() {
                 <div className="member-row-copy">
                   <div className="member-row-heading">
                     <h3>{member.nickname}</h3>
+                    {member.fullName && <span className="member-real-name">{member.fullName}</span>}
                     <span className="grade-tag">{member.grade}</span>
                   </div>
                   {member.bio && <p className="member-bio">{member.bio}</p>}

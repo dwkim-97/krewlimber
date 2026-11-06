@@ -10,6 +10,7 @@ afterEach(() => {
 });
 it('shows members as vertical list items and preserves filtering and empty achievement states', async () => {
   const member: Member = {
+    fullName: '홍길동',
     id: 'a',
     nickname: '크루 하나',
     grade: 'V4',
@@ -28,7 +29,15 @@ it('shows members as vertical list items and preserves filtering and empty achie
           JSON.stringify({
             members: [
               member,
-              {...member, id: 'b', nickname: '크루 둘', grade: 'V2', titles: [], featuredAchievement: null},
+              {
+                ...member,
+                id: 'b',
+                nickname: '크루 둘',
+                fullName: '김영희',
+                grade: 'V2',
+                titles: [],
+                featuredAchievement: null,
+              },
             ],
           })
         )
@@ -40,9 +49,14 @@ it('shows members as vertical list items and preserves filtering and empty achie
   expect(within(list).getByText('번개 공장장')).toBeTruthy();
   expect(within(list).getByText('또 오셨네요')).toBeTruthy();
   expect(within(list).getByText('선택한 대표 업적 없음')).toBeTruthy();
+  expect(within(list).getByText('홍길동')).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('닉네임 또는 한글 이름으로 회원 검색'), {target: {value: '김영희'}});
+  expect(within(list).getAllByRole('listitem')).toHaveLength(1);
+  expect(within(list).getByRole('heading', {name: '크루 둘'})).toBeTruthy();
+  fireEvent.change(screen.getByLabelText('닉네임 또는 한글 이름으로 회원 검색'), {target: {value: ''}});
   fireEvent.change(screen.getByLabelText('난이도 필터'), {target: {value: 'V4'}});
   expect(within(list).getAllByRole('listitem')).toHaveLength(1);
   expect(within(list).getByRole('heading', {name: '크루 하나'})).toBeTruthy();
-  fireEvent.change(screen.getByLabelText('닉네임으로 회원 검색'), {target: {value: '없는 회원'}});
+  fireEvent.change(screen.getByLabelText('닉네임 또는 한글 이름으로 회원 검색'), {target: {value: '없는 회원'}});
   expect(screen.getByText('검색 결과가 없어요')).toBeTruthy();
 });

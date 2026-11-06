@@ -28,9 +28,10 @@ import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
 import type {ImageStorage} from './image-storage';
 import {registerMarketImageRoutes} from './market-images';
-import {usernameSchema as username, passwordSchema as password, nicknameSchema} from './validation';
+import {usernameSchema as username, passwordSchema as password, nicknameSchema, fullNameSchema} from './validation';
 
 const profileSchema = z.object({
+  fullName: fullNameSchema.optional(),
   nickname: nicknameSchema,
   bio: z.string().trim().max(200),
   location: z.string().trim().max(30),
@@ -157,7 +158,9 @@ export function createApp({
   app.get('/api/health', (_req, res) => res.json({status: 'ok'}));
   app.get('/api/me', async (req, res) => res.json({user: await sessionUser(db, req)}));
   app.post('/api/auth/signup', async (req, res) => {
-    const input = z.object({username, password, nickname: profileSchema.shape.nickname}).parse(req.body);
+    const input = z
+      .object({username, password, fullName: fullNameSchema, nickname: profileSchema.shape.nickname})
+      .parse(req.body);
     if (await db.prepare('SELECT id FROM users WHERE username = ?').get(input.username))
       throw new ApiError(409, '이미 사용 중인 아이디입니다.');
     let user: User;
@@ -199,8 +202,8 @@ export function createApp({
     const user = await requireUser(req);
     const input = profileSchema.parse(req.body);
     await db
-      .prepare('UPDATE users SET nickname = ?, bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?')
-      .run(input.nickname, input.bio, input.location, input.gym, input.grade, user.id);
+      .prepare('UPDATE users SET nickname = ?, fullName = ?, bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?')
+      .run(input.nickname, input.fullName ?? user.fullName, input.bio, input.location, input.gym, input.grade, user.id);
     res.json({user: await db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(user.id)});
   });
   app.patch('/api/me/password', async (req, res) => {
@@ -228,7 +231,7 @@ export function createApp({
     await requireMember(req);
     const members = (await db
       .prepare(
-        "SELECT id,nickname,bio,location,gym,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
+        "SELECT id,fullName,nickname,bio,location,gym,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
       )
       .all()) as unknown as MemberProfile[];
     res.json({members: await decorateMembers(db, members, currentQuarter(new Date()))});

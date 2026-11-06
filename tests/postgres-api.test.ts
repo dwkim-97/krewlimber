@@ -11,6 +11,7 @@ it('runs signup, session and profile APIs against PostgreSQL', async () => {
   await engine.exec(readFileSync('supabase/migrations/202611060001_initial.sql', 'utf8'));
   await engine.exec(readFileSync('supabase/migrations/202611060002_rate_limits.sql', 'utf8'));
   await engine.exec(readFileSync('supabase/migrations/202611060003_staff_role.sql', 'utf8'));
+  await engine.exec(readFileSync('supabase/migrations/202611060004_member_names.sql', 'utf8'));
   const db = new PostgresDatabase({
     query: async (sql, values) => {
       const r = await engine.query(sql, values);
@@ -34,7 +35,7 @@ it('runs signup, session and profile APIs against PostgreSQL', async () => {
         await agent
           .post('/api/auth/signup')
           .set('Origin', origin)
-          .send({username: 'pg.member', password: '1234', nickname: '크루'})
+          .send({fullName: '홍길동', username: 'pg.member', password: '1234', nickname: '크루'})
       ).status
     ).toBe(201);
     const current = await agent.get('/api/me');

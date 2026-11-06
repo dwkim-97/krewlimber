@@ -8,6 +8,7 @@ import type {User} from '../src/types';
 import type {Notice} from '../src/types/boards';
 
 const user: User = {
+  fullName: '홍길동',
   id: 'member',
   username: 'member',
   nickname: '크루',

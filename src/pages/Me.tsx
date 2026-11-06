@@ -133,6 +133,18 @@ export function Me() {
                 <form onSubmit={saveProfile} key={`${user.id}-${user.nickname}-${user.grade}`}>
                   <div className="form-grid">
                     <label>
+                      한글 이름
+                      <input
+                        name="fullName"
+                        defaultValue={user.fullName}
+                        autoComplete="name"
+                        placeholder="홍길동"
+                        required
+                        minLength={2}
+                        maxLength={30}
+                      />
+                    </label>
+                    <label>
                       닉네임
                       <input
                         name="nickname"

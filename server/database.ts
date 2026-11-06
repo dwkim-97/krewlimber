@@ -28,7 +28,7 @@ export interface QueryPool {
   end(): Promise<void>;
 }
 const camelNames =
-  'passwordHash createdAt updatedAt tokenHash userId expiresAt achievedAt createdBy actorId targetId achievementId authorId imageUrl productId productName requestId orderId'.split(
+  'fullName passwordHash createdAt updatedAt tokenHash userId expiresAt achievedAt createdBy actorId targetId achievementId authorId imageUrl productId productName requestId orderId'.split(
     ' '
   );
 const names = new Map(camelNames.map(name => [name.toLowerCase(), name]));

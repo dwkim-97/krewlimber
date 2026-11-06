@@ -26,7 +26,11 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
     try {
       const payload = recovery
         ? {username: form.get('username'), token: form.get('token'), newPassword: password}
-        : {username: form.get('username'), password, ...(signup ? {nickname: form.get('nickname')} : {})};
+        : {
+            username: form.get('username'),
+            password,
+            ...(signup ? {nickname: form.get('nickname'), fullName: form.get('fullName')} : {}),
+          };
       await api(`/auth/${recovery ? 'recover' : mode}`, {method: 'POST', body: JSON.stringify(payload)});
       const nextUser = await refresh();
       if (recovery) setDone(true);
@@ -74,6 +78,12 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
               />
               {signup && <small>영문으로 시작하는 3~32자 · 숫자, . _ - 사용 가능</small>}
             </label>
+            {signup && (
+              <label>
+                한글 이름
+                <input name="fullName" placeholder="홍길동" autoComplete="name" required minLength={2} maxLength={30} />
+              </label>
+            )}
             {signup && (
               <label>
                 닉네임

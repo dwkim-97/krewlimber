@@ -9,6 +9,7 @@ import {SessionContext} from '../src/stores/session';
 import type {User} from '../src/types';
 
 const user: User = {
+  fullName: '홍길동',
   id: 'admin',
   username: 'test.admin',
   nickname: '운영진',

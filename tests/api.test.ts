@@ -16,7 +16,7 @@ beforeEach(() => {
 afterEach(() => db.close());
 
 async function account(username: string, role: 'member' | 'admin', status: 'pending' | 'approved') {
-  return await createAccount(db, {username, password, nickname: username, role, status});
+  return await createAccount(db, {fullName: '홍길동', username, password, nickname: username, role, status});
 }
 
 async function login(username: string) {
@@ -34,7 +34,7 @@ describe('own-account authentication', () => {
         .post('/api/auth/signup')
         .set('Origin', origin)
         .set('X-Forwarded-For', `203.0.113.${i + 1}`)
-        .send({username: `climber${i}`, nickname: `크루${i}`, password});
+        .send({fullName: '홍길동', username: `climber${i}`, nickname: `크루${i}`, password});
       expect(response.status).toBe(201);
     }
   });
@@ -64,7 +64,14 @@ describe('own-account authentication', () => {
     const response = await agent
       .post('/api/auth/signup')
       .set('Origin', origin)
-      .send({username: 'Aiden.DW', password, nickname: '에이든', role: 'admin', status: 'approved'});
+      .send({
+        fullName: '홍길동',
+        username: 'Aiden.DW',
+        password,
+        nickname: '에이든',
+        role: 'admin',
+        status: 'approved',
+      });
     expect(response.status).toBe(201);
     expect(response.body.user).toMatchObject({username: 'aiden.dw', status: 'pending', role: 'member'});
     expect(JSON.stringify(response.body)).not.toContain(password);
@@ -80,7 +87,7 @@ describe('own-account authentication', () => {
     const response = await request(app)
       .post('/api/auth/signup')
       .set('Origin', origin)
-      .send({username: 'short.pass', password: '1234', nickname: '새회원'});
+      .send({fullName: '홍길동', username: 'short.pass', password: '1234', nickname: '새회원'});
     expect(response.status).toBe(201);
     expect(response.body.user.status).toBe('pending');
     const loggedIn = await request(app)
@@ -93,9 +100,9 @@ describe('own-account authentication', () => {
 
   it('rejects malformed and duplicate IDs and weak passwords', async () => {
     for (const data of [
-      {username: 'a b', password, nickname: '에이든'},
-      {username: 'aiden.dw', password: '123', nickname: '에이든'},
-      {username: 'aiden.dw', password, nickname: ''},
+      {fullName: '홍길동', username: 'a b', password, nickname: '에이든'},
+      {fullName: '홍길동', username: 'aiden.dw', password: '123', nickname: '에이든'},
+      {fullName: '홍길동', username: 'aiden.dw', password, nickname: ''},
     ]) {
       expect((await request(app).post('/api/auth/signup').set('Origin', origin).send(data)).status).toBe(400);
     }
@@ -105,7 +112,7 @@ describe('own-account authentication', () => {
         await request(app)
           .post('/api/auth/signup')
           .set('Origin', origin)
-          .send({username: 'AIDEN.DW', password, nickname: '새회원'})
+          .send({fullName: '홍길동', username: 'AIDEN.DW', password, nickname: '새회원'})
       ).status
     ).toBe(409);
   });
@@ -134,7 +141,7 @@ describe('own-account authentication', () => {
   });
 
   it('rejects cross-site and missing-origin mutation requests', async () => {
-    const data = {username: 'aiden.dw', password, nickname: '에이든'};
+    const data = {fullName: '홍길동', username: 'aiden.dw', password, nickname: '에이든'};
     expect((await request(app).post('/api/auth/signup').send(data)).status).toBe(403);
     expect((await request(app).post('/api/auth/signup').set('Origin', 'https://evil.example').send(data)).status).toBe(
       403
@@ -187,15 +194,19 @@ describe('membership authorization', () => {
     await account('aiden.dw', 'member', 'approved');
     await account('waiting', 'member', 'pending');
     const user = await login('aiden.dw');
-    const updated = await user.patch('/api/me').set('Origin', origin).send({
-      nickname: '새닉네임',
-      bio: '',
-      location: '서울',
-      gym: '더클라임',
-      grade: 'V3',
-      role: 'admin',
-      status: 'approved',
-    });
+    const updated = await user
+      .patch('/api/me')
+      .set('Origin', origin)
+      .send({
+        fullName: '홍길동',
+        nickname: '새닉네임',
+        bio: '',
+        location: '서울',
+        gym: '더클라임',
+        grade: 'V3',
+        role: 'admin',
+        status: 'approved',
+      });
     expect(updated.status).toBe(200);
     expect(updated.body.user).toMatchObject({role: 'member', nickname: '새닉네임'});
     const members = (await user.get('/api/members')).body.members;

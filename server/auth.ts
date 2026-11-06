@@ -8,7 +8,7 @@ export interface UserRecord extends User {
 }
 const sessionLifetime = 7 * 24 * 60 * 60 * 1000;
 const cookieName = 'krew_session';
-export const userColumns = 'id, username, nickname, bio, location, gym, grade, role, status, createdAt';
+export const userColumns = 'id, username, fullName, nickname, bio, location, gym, grade, role, status, createdAt';
 export const dummyHash = `scrypt$32768$8$3$${'0'.repeat(32)}$${'0'.repeat(128)}`;
 
 function derive(password: string, salt: string): Promise<Buffer> {
@@ -43,6 +43,7 @@ export async function createAccount(
     username: string;
     password: string;
     nickname: string;
+    fullName?: string;
     role: Role;
     status: MemberStatus;
   }
@@ -51,14 +52,15 @@ export async function createAccount(
   const passwordHash = await hashPassword(input.password);
   await db
     .prepare(
-      `INSERT INTO users (id, username, passwordHash, nickname, role, status, createdAt)
-    VALUES (?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO users (id, username, passwordHash, nickname, fullName, role, status, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       id,
       input.username.trim().toLowerCase(),
       passwordHash,
       input.nickname,
+      input.fullName ?? '',
       input.role,
       input.status,
       new Date().toISOString()

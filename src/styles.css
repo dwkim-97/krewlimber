@@ -2668,3 +2668,9 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
     font-size: 18px;
   }
 }
+
+.member-real-name {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 500;
+}

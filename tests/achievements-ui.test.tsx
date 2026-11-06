@@ -116,6 +116,7 @@ it('clears the previous account achievements when the active session changes', a
     )
   );
   const user: User = {
+    fullName: '홍길동',
     id: 'a',
     username: 'account.a',
     nickname: '계정 A',

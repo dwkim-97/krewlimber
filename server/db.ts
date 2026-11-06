@@ -21,6 +21,7 @@ export function openDatabase(path: string) {
       username TEXT NOT NULL UNIQUE COLLATE NOCASE,
       passwordHash TEXT NOT NULL,
       nickname TEXT NOT NULL,
+      fullName TEXT NOT NULL DEFAULT '',
       bio TEXT NOT NULL DEFAULT '',
       location TEXT NOT NULL DEFAULT '',
       gym TEXT NOT NULL DEFAULT '',

@@ -4,6 +4,7 @@ export type Grade = '입문' | 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 
 export type HonorKind = 'send' | 'growth' | 'crew';
 
 export interface Profile {
+  fullName: string;
   nickname: string;
   bio: string;
   location: string;

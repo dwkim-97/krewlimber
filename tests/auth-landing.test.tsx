@@ -6,6 +6,7 @@ import {Auth} from '../src/pages/Auth';
 import {SessionContext} from '../src/stores/session';
 import type {User} from '../src/types';
 const member: User = {
+  fullName: '홍길동',
   id: 'member',
   username: 'crew.member',
   nickname: '크루',
@@ -53,4 +54,37 @@ it('redirects an already approved member from login to basecamp', async () => {
 it('keeps pending members on their membership status page', async () => {
   view({...member, status: 'pending'});
   expect(await screen.findByRole('heading', {name: '내 정보'})).toBeTruthy();
+});
+
+it('collects a required Korean name separately from nickname at signup', async () => {
+  let submitted: Record<string, unknown> | undefined;
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_url, init: RequestInit) => {
+      submitted = JSON.parse(String(init.body));
+      return new Response(JSON.stringify({user: {...member, status: 'pending'}}));
+    })
+  );
+  render(
+    <MemoryRouter initialEntries={['/signup']}>
+      <SessionContext.Provider
+        value={{user: null, loading: false, error: '', refresh: async () => ({...member, status: 'pending'})}}
+      >
+        <Routes>
+          <Route path="/signup" element={<Auth mode="signup" />} />
+          <Route path="/me" element={<h1>가입 상태</h1>} />
+        </Routes>
+      </SessionContext.Provider>
+    </MemoryRouter>
+  );
+  const name = screen.getByLabelText('한글 이름') as HTMLInputElement;
+  expect(name.required).toBe(true);
+  fireEvent.change(screen.getByRole('textbox', {name: /^아이디/}), {target: {value: 'signup.member'}});
+  fireEvent.change(name, {target: {value: '김성수'}});
+  fireEvent.change(screen.getByLabelText('닉네임'), {target: {value: '클라이머'}});
+  fireEvent.change(screen.getByLabelText('비밀번호', {exact: true}), {target: {value: '1234'}});
+  fireEvent.change(screen.getByLabelText('비밀번호 확인'), {target: {value: '1234'}});
+  fireEvent.click(screen.getByRole('button', {name: '가입 신청'}));
+  expect(await screen.findByRole('heading', {name: '가입 상태'})).toBeTruthy();
+  expect(submitted).toMatchObject({username: 'signup.member', fullName: '김성수', nickname: '클라이머'});
 });

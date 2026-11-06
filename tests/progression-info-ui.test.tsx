@@ -55,6 +55,7 @@ it('opens title conditions independently from the ranking toggle and closes the 
 
 it('explains a member title quarter and featured achievement condition', async () => {
   const member: Member = {
+    fullName: '홍길동',
     id: 'a',
     nickname: '에이든',
     grade: 'V6',
