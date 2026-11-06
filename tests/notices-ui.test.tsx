@@ -13,6 +13,7 @@ const user: User = {
   nickname: '크루',
   role: 'member',
   status: 'approved',
+  instagramUrl: '',
   bio: '',
   grade: '입문',
   location: '',

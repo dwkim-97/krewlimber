@@ -1,13 +1,15 @@
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
+import gymCatalog from './gyms.catalog.json';
+import {canonicalGymId} from './gym-catalog';
 import {INITIAL_ACHIEVEMENTS, ADDITIONAL_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
   const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
-  if (version > 6) {
+  if (version > 8) {
     db.close();
     throw new Error('Unsupported database version.');
   }
@@ -182,6 +184,32 @@ export function openDatabase(path: string) {
         insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
       db.exec('PRAGMA user_version=6;');
     });
+  if (version < 7)
+    transaction(db, () => {
+      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 7) return;
+      db.exec("ALTER TABLE users ADD COLUMN instagramUrl TEXT NOT NULL DEFAULT ''; PRAGMA user_version=7;");
+    });
+  if (version < 8)
+    transaction(db, () => {
+      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 8) return;
+      db.exec(`
+        CREATE TABLE climbingGyms (id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,region TEXT NOT NULL,franchiseId TEXT NOT NULL,franchiseName TEXT NOT NULL,url TEXT NOT NULL);
+        CREATE TABLE climbingVisits (id TEXT PRIMARY KEY,userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,gymId TEXT NOT NULL REFERENCES climbingGyms(id),date TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,UNIQUE(userId,date,gymId));
+        CREATE TABLE climbingColors (visitId TEXT NOT NULL REFERENCES climbingVisits(id) ON DELETE CASCADE,colorKey TEXT NOT NULL,name TEXT NOT NULL,hex TEXT NOT NULL,count INTEGER NOT NULL CHECK(count BETWEEN 1 AND 1000 AND typeof(count)='integer'),PRIMARY KEY(visitId,colorKey));
+        CREATE INDEX climbingVisits_user ON climbingVisits(userId,date DESC,id);
+        DELETE FROM featuredAchievements WHERE achievementId IN (SELECT id FROM achievementDefinitions WHERE metric IN ('participation','red','pink','purple','gray'));
+        PRAGMA user_version=8;
+      `);
+    });
+  transaction(db, () => {
+    const insert =
+      db.prepare(`INSERT INTO climbingGyms(id,name,address,region,franchiseId,franchiseName,url) VALUES(?,?,?,?,?,?,?)
+      ON CONFLICT(id) DO UPDATE SET name=excluded.name,address=excluded.address,region=excluded.region,franchiseId=excluded.franchiseId,franchiseName=excluded.franchiseName,url=excluded.url`);
+    for (const gym of gymCatalog.gyms) {
+      const canonical = gymCatalog.gyms.find(g => g.id === canonicalGymId(gym.id))!;
+      insert.run(gym.id, gym.name, gym.address, gym.region, canonical.franchiseId, canonical.franchiseName, gym.url);
+    }
+  });
   return db;
 }
 

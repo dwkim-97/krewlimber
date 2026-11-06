@@ -122,6 +122,7 @@ it('clears the previous account achievements when the active session changes', a
     role: 'member',
     status: 'approved',
     grade: 'V1',
+    instagramUrl: '',
     bio: '',
     location: '',
     gym: '',

@@ -13,6 +13,7 @@ it('shows members as vertical list items and preserves filtering and empty achie
     id: 'a',
     nickname: '크루 하나',
     grade: 'V4',
+    instagramUrl: 'https://www.instagram.com/climb.demo/',
     bio: '함께 올라요',
     gym: '더클라임',
     location: '판교',
@@ -38,6 +39,9 @@ it('shows members as vertical list items and preserves filtering and empty achie
   const list = await screen.findByRole('list', {name: '멤버 목록'});
   expect(within(list).getAllByRole('listitem')).toHaveLength(2);
   expect(within(list).getByText('번개 공장장')).toBeTruthy();
+  expect(within(list).getByRole('link', {name: '크루 하나 인스타그램'}).getAttribute('href')).toBe(
+    'https://www.instagram.com/climb.demo/'
+  );
   expect(within(list).getByText('또 오셨네요')).toBeTruthy();
   expect(within(list).getByText('선택한 대표 업적 없음')).toBeTruthy();
   fireEvent.change(screen.getByLabelText('난이도 필터'), {target: {value: 'V4'}});

@@ -11,9 +11,9 @@ import {
   getAchievements,
   getTitleBoard,
   decorateMembers,
-  setActivityCounts,
   setFeaturedAchievement,
 } from '../server/progression';
+import {setVisitFixture} from './climbing-fixtures';
 import type {ActivityCounts, MemberProfile} from '../src/types';
 
 const password = 'progression test passphrase';
@@ -28,7 +28,7 @@ async function member(username: string, status: 'approved' | 'pending' | 'suspen
   return createAccount(db, {username, password, nickname: username, role: 'member', status});
 }
 function record(id: string, quarter: string, counts: ActivityCounts) {
-  transaction(db, () => setActivityCounts(db, id, quarter, counts));
+  transaction(db, () => setVisitFixture(db, id, quarter, counts));
 }
 
 describe('quarterly titles', () => {
@@ -44,7 +44,7 @@ describe('quarterly titles', () => {
     record(a.id, '2026-Q4', {...zero, participation: 20, red: 50});
     record(b.id, '2026-Q4', {...zero, participation: 20, hosted: 8});
     record(c.id, '2026-Q4', {...zero, participation: 4});
-    record(inactive.id, '2026-Q4', {...zero, participation: 999, red: 999});
+    record(inactive.id, '2026-Q4', {...zero, participation: 25, red: 999});
     const board = getTitleBoard(db, '2026-Q4');
     expect(
       board.categories.find(x => x.id === 'participation')!.standings.map(x => [x.nickname, x.rank, x.value])
@@ -95,7 +95,7 @@ describe('achievements', () => {
     record(user.id, quarter, {...zero, participation: 10, red: 50});
     setFeaturedAchievement(db, user.id, 'theclimb-red-50');
     const base = db
-      .prepare('SELECT id,nickname,bio,location,gym,grade,createdAt FROM users WHERE id=?')
+      .prepare('SELECT id,nickname,bio,location,gym,instagramUrl,grade,createdAt FROM users WHERE id=?')
       .all(user.id) as unknown as MemberProfile[];
     const [decorated] = decorateMembers(db, base, quarter);
     expect(decorated.featuredAchievement).toMatchObject({id: 'theclimb-red-50', name: '적색경보 해제'});
@@ -113,7 +113,7 @@ describe('achievements', () => {
         )
         .run();
       persistent.exec(
-        'DROP TABLE pointLedger; DROP TABLE marketOrders; DROP TABLE marketProducts; DROP TABLE notices; DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; PRAGMA user_version=1;'
+        'DROP TABLE pointLedger; DROP TABLE marketOrders; DROP TABLE marketProducts; DROP TABLE notices; DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; DROP TABLE climbingColors;DROP TABLE climbingVisits;DROP TABLE climbingGyms;ALTER TABLE users DROP COLUMN instagramUrl;PRAGMA user_version=1;'
       );
       persistent.close();
       persistent = openDatabase(file);
@@ -179,6 +179,7 @@ describe('progression API', () => {
           .send({quarter: '2026-Q4', counts: {...zero, red: 50}})
       ).status
     ).toBe(200);
+    record(user.id, '2026-Q4', {...zero, red: 50});
     expect(
       (
         await regular.agent

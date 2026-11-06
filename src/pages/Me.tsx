@@ -1,6 +1,7 @@
 import {Check, Clock3, KeyRound, LogOut, ShieldCheck} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
+import {ClimbingSummaryView} from '@/components/ClimbingSummary';
 import {Achievements} from '@/components/Achievements';
 import {Avatar, ErrorNotice, PageHeading, TextLink} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
@@ -15,7 +16,11 @@ export function Me() {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'achievements' ? 'achievements' : 'profile';
+  const selectedTab = params.get('tab');
+  const tab =
+    selectedTab === 'achievements' || (selectedTab === 'records' && user?.status === 'approved')
+      ? selectedTab
+      : 'profile';
   if (!user) return null;
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -94,6 +99,11 @@ export function Me() {
             <button className={tab === 'profile' ? 'active' : ''} onClick={() => setParams({tab: 'profile'})}>
               프로필
             </button>
+            {approved && (
+              <button className={tab === 'records' ? 'active' : ''} onClick={() => setParams({tab: 'records'})}>
+                기록
+              </button>
+            )}
             <button className={tab === 'achievements' ? 'active' : ''} onClick={() => setParams({tab: 'achievements'})}>
               업적
             </button>
@@ -120,7 +130,9 @@ export function Me() {
             </div>
           )}
           {error && <ErrorNotice message={error} retry={null} />}
-          {tab === 'achievements' ? (
+          {tab === 'records' ? (
+            <ClimbingSummaryView key={user.id} />
+          ) : tab === 'achievements' ? (
             <Achievements key={user.id} />
           ) : (
             <>
@@ -169,6 +181,15 @@ export function Me() {
                       />
                     </label>
                   </div>
+                  <label>
+                    인스타그램
+                    <input
+                      name="instagramUrl"
+                      defaultValue={user.instagramUrl}
+                      placeholder="클라이밍 인스타 계정"
+                      maxLength={200}
+                    />
+                  </label>
                   <label>
                     한 줄 소개
                     <textarea

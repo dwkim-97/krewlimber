@@ -174,6 +174,7 @@ describe('membership authorization', () => {
     const user = await login('aiden.dw');
     const updated = await user.patch('/api/me').set('Origin', origin).send({
       nickname: '새닉네임',
+      instagramUrl: '',
       bio: '',
       location: '서울',
       gym: '더클라임',
