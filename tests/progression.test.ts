@@ -113,7 +113,7 @@ describe('achievements', () => {
         )
         .run();
       persistent.exec(
-        'DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; PRAGMA user_version=1;'
+        'DROP TABLE pointLedger; DROP TABLE marketOrders; DROP TABLE marketProducts; DROP TABLE notices; DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; PRAGMA user_version=1;'
       );
       persistent.close();
       persistent = openDatabase(file);

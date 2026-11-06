@@ -21,6 +21,8 @@ import {transaction} from './db';
 import {ApiError} from './errors';
 import {currentQuarter, decorateMembers} from './progression';
 import {registerProgressionRoutes} from './progression-routes';
+import {registerNoticeRoutes} from './notice-routes';
+import {registerMarketRoutes} from './market-routes';
 import {usernameSchema as username, passwordSchema as password, nicknameSchema} from './validation';
 
 const profileSchema = z.object({
@@ -60,7 +62,7 @@ export function createApp({
   app.disable('x-powered-by');
   app.use(
     helmet({
-      contentSecurityPolicy: secureCookies ? undefined : false,
+      contentSecurityPolicy: secureCookies ? {directives: {imgSrc: ["'self'", 'data:', 'https:']}} : false,
       strictTransportSecurity: secureCookies ? undefined : false,
     })
   );
@@ -217,6 +219,8 @@ export function createApp({
       .all() as unknown as MemberProfile[];
     res.json({members: decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
+  registerMarketRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerProgressionRoutes(app, db, {user: requireUser, member: requireMember, admin: requireAdmin, audit});
   app.get('/api/honors', (req, res) => {
     requireMember(req);

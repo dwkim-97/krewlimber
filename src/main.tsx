@@ -7,6 +7,9 @@ import {HallOfFame} from '@/pages/HallOfFame';
 import {Home} from '@/pages/Home';
 import {Me} from '@/pages/Me';
 import {Members} from '@/pages/Members';
+import {Notices, NoticeDetail, NoticeEditor} from '@/pages/Notices';
+import {Market, ProductDetail} from '@/pages/Market';
+import {MyOrders} from '@/pages/MyOrders';
 import {Layout} from '@/components/Layout';
 import {Protected} from '@/components/Protected';
 import {EmptyState} from '@/components/ui';
@@ -24,6 +27,62 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <Protected access="member">
                   <Home />
+                </Protected>
+              }
+            />
+            <Route
+              path="notices"
+              element={
+                <Protected access="member">
+                  <Notices />
+                </Protected>
+              }
+            />
+            <Route
+              path="notices/new"
+              element={
+                <Protected access="admin">
+                  <NoticeEditor />
+                </Protected>
+              }
+            />
+            <Route
+              path="notices/:id/edit"
+              element={
+                <Protected access="admin">
+                  <NoticeEditor />
+                </Protected>
+              }
+            />
+            <Route
+              path="notices/:id"
+              element={
+                <Protected access="member">
+                  <NoticeDetail />
+                </Protected>
+              }
+            />
+            <Route
+              path="market"
+              element={
+                <Protected access="member">
+                  <Market />
+                </Protected>
+              }
+            />
+            <Route
+              path="market/:id"
+              element={
+                <Protected access="member">
+                  <ProductDetail />
+                </Protected>
+              }
+            />
+            <Route
+              path="me/orders"
+              element={
+                <Protected access="member">
+                  <MyOrders />
                 </Protected>
               }
             />
