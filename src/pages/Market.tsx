@@ -1,8 +1,9 @@
-import {ArrowLeft, ArrowUpRight, Backpack, Coins, Gift, Search, Shirt, ShoppingBag, Ticket} from 'lucide-react';
+import {ArrowLeft, ArrowUpRight, Backpack, Coins, Gift, Plus, Search, Shirt, ShoppingBag, Ticket} from 'lucide-react';
 import {useRef, useState, type FormEvent} from 'react';
-import {Link, useParams, useSearchParams} from 'react-router-dom';
+import {Link, useLocation, useParams, useSearchParams} from 'react-router-dom';
 import {EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
+import {useSession} from '@/hooks/useSession';
 import {api, ApiRequestError} from '@/apis/client';
 import type {MarketOrder, Page, Product, ProductCategory, Wallet} from '@/types/boards';
 import '@/styles/market.css';
@@ -39,6 +40,8 @@ function ProductVisual({product}: {product: Product}) {
 }
 
 export function Market() {
+  const {user} = useSession();
+  const {state} = useLocation();
   const [params, setParams] = useSearchParams();
   const page = Math.max(1, Number(params.get('page')) || 1);
   const q = params.get('q') ?? '';
@@ -55,10 +58,22 @@ export function Market() {
   return (
     <div className="page-shell market-page">
       <PageHeading title="포인트 마켓">
-        <Link className="text-link" to="/me/orders">
-          내 교환 내역 <ArrowUpRight size={17} />
-        </Link>
+        <div className="market-heading-actions">
+          <Link className="text-link" to="/me/orders">
+            내 교환 내역 <ArrowUpRight size={17} />
+          </Link>
+          {user?.role === 'admin' && user.status === 'approved' && (
+            <Link className="button button-dark button-small" to="/market/new">
+              <Plus size={17} /> 상품 등록
+            </Link>
+          )}
+        </div>
       </PageHeading>
+      {state?.productCreated === true && (
+        <div className="notice success" role="status">
+          상품을 등록했습니다.
+        </div>
+      )}
       <section className="market-intro">
         <div>
           <span className="market-eyebrow">CLIMB TOGETHER, GET MORE.</span>

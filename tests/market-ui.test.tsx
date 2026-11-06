@@ -5,6 +5,7 @@ import {afterEach, expect, it, vi} from 'vitest';
 import {Market, ProductDetail} from '../src/pages/Market';
 import {AdminMarket} from '../src/components/AdminMarket';
 import {MyOrders} from '../src/pages/MyOrders';
+import {SessionContext} from '../src/stores/session';
 
 const product = {
   id: 'chalk',
@@ -120,7 +121,9 @@ it('uses the all category API value and changes category without retaining the p
   );
   render(
     <MemoryRouter initialEntries={['/market?page=2']}>
-      <Market />
+      <SessionContext.Provider value={{user: null, loading: false, error: '', refresh: async () => null}}>
+        <Market />
+      </SessionContext.Provider>
     </MemoryRouter>
   );
   await screen.findByRole('heading', {name: product.name});
