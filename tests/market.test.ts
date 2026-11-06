@@ -13,23 +13,15 @@ let member: string;
 let other: string;
 let pending: string;
 let memberId: string;
-function account(name: string, role: 'admin' | 'member', status: 'approved' | 'pending') {
+async function account(name: string, role: 'admin' | 'member', status: 'approved' | 'pending') {
   const id = randomUUID();
   const token = randomBytes(32).toString('hex');
-  db.prepare('INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES(?,?,?,?,?,?,?)').run(
-    id,
-    name,
-    'unused-test-hash',
-    name,
-    role,
-    status,
-    new Date().toISOString()
-  );
-  db.prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)').run(
-    hashToken(token),
-    id,
-    Date.now() + 60000
-  );
+  await db
+    .prepare('INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES(?,?,?,?,?,?,?)')
+    .run(id, name, 'unused-test-hash', name, role, status, new Date().toISOString());
+  await db
+    .prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)')
+    .run(hashToken(token), id, Date.now() + 60000);
   return {id, cookie: `krew_session=${token}`};
 }
 const input = {
@@ -41,15 +33,15 @@ const input = {
   stock: 2,
   active: true,
 };
-beforeEach(() => {
+beforeEach(async () => {
   db = openDatabase(':memory:');
   app = createApp({db, origin, secureCookies: false, trustProxy: false});
-  admin = account('admin', 'admin', 'approved').cookie;
-  const user = account('member', 'member', 'approved');
+  admin = (await account('admin', 'admin', 'approved')).cookie;
+  const user = await account('member', 'member', 'approved');
   member = user.cookie;
   memberId = user.id;
-  other = account('other', 'member', 'approved').cookie;
-  pending = account('pending', 'member', 'pending').cookie;
+  other = (await account('other', 'member', 'approved')).cookie;
+  pending = (await account('pending', 'member', 'pending')).cookie;
 });
 afterEach(() => db.close());
 async function product() {
@@ -77,7 +69,9 @@ async function order(productId: string, quantity: number, requestId: string) {
       productId,
       quantity,
       requestId,
-      productRevision: Number(db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(productId)!.revision),
+      productRevision: Number(
+        (await db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(productId))!.revision
+      ),
     });
 }
 it('protects catalog, wallet and administration with current member permissions', async () => {
@@ -111,7 +105,7 @@ it('validates products and hides inactive products from member catalog', async (
         .set('Origin', origin)
         .send({
           ...input,
-          revision: Number(db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id)!.revision),
+          revision: Number((await db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id))!.revision),
           active: false,
         })
     ).status
@@ -137,7 +131,7 @@ it('deducts points and stock once, returns request replays and preserves order s
     .set('Origin', origin)
     .send({
       ...input,
-      revision: Number(db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id)!.revision),
+      revision: Number((await db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id))!.revision),
       name: '새 이름',
       points: 500,
     });
@@ -169,10 +163,10 @@ it('allows only one request to reserve the last unit', async () => {
     .set('Origin', origin)
     .send({
       ...input,
-      revision: Number(db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id)!.revision),
+      revision: Number((await db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id))!.revision),
       stock: 1,
     });
-  const results = await Promise.all([order(p.id, 1, randomUUID()), order(p.id, 1, randomUUID())]);
+  const results = await Promise.all([await order(p.id, 1, randomUUID()), await order(p.id, 1, randomUUID())]);
   expect(results.map(r => r.status).sort()).toEqual([201, 409]);
   expect((await request(app).get('/api/me/wallet').set('Cookie', member)).body.balance).toBe(400);
 });
@@ -219,7 +213,9 @@ it('allows audited point corrections without a negative balance and rejects inva
   expect((await grant(0)).status).toBe(400);
   expect((await grant(1.2)).status).toBe(400);
   expect((await request(app).get(`/api/admin/points?userId=${memberId}`).set('Cookie', admin)).body.balance).toBe(150);
-  expect(db.prepare("SELECT COUNT(*) AS count FROM auditLog WHERE action='points.adjust'").get()!.count).toBe(2);
+  expect((await db.prepare("SELECT COUNT(*) AS count FROM auditLog WHERE action='points.adjust'").get())!.count).toBe(
+    2
+  );
 });
 it('rolls back a purchase if its audit write fails', async () => {
   const p = await product();
@@ -244,7 +240,7 @@ it('rejects inventory corrections that would prevent pending cancellation', asyn
         .set('Origin', origin)
         .send({
           ...input,
-          revision: Number(db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id)!.revision),
+          revision: Number((await db.prepare('SELECT revision FROM marketProducts WHERE id=?').get(p.id))!.revision),
           stock: 1000000,
         })
     ).status

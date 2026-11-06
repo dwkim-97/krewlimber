@@ -16,32 +16,24 @@ let uploadsDir: string;
 let admin: string;
 let member: string;
 let pending: string;
-function account(role: 'admin' | 'member', status: 'approved' | 'pending') {
+async function account(role: 'admin' | 'member', status: 'approved' | 'pending') {
   const id = randomUUID();
   const token = randomBytes(32).toString('hex');
-  db.prepare('INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES(?,?,?,?,?,?,?)').run(
-    id,
-    id,
-    'unused',
-    id,
-    role,
-    status,
-    new Date().toISOString()
-  );
-  db.prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)').run(
-    hashToken(token),
-    id,
-    Date.now() + 60000
-  );
+  await db
+    .prepare('INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES(?,?,?,?,?,?,?)')
+    .run(id, id, 'unused', id, role, status, new Date().toISOString());
+  await db
+    .prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)')
+    .run(hashToken(token), id, Date.now() + 60000);
   return `krew_session=${token}`;
 }
 beforeEach(async () => {
   uploadsDir = await mkdtemp(join(tmpdir(), 'krew-market-images-'));
   db = openDatabase(':memory:');
   app = createApp({db, origin, secureCookies: false, trustProxy: false, uploadsDir});
-  admin = account('admin', 'approved');
-  member = account('member', 'approved');
-  pending = account('member', 'pending');
+  admin = await account('admin', 'approved');
+  member = await account('member', 'approved');
+  pending = await account('member', 'pending');
 });
 afterEach(async () => {
   db.close();
@@ -99,7 +91,7 @@ it('rejects unsupported, malformed, empty, oversized and excessive-pixel images 
   expect((await upload(admin, Buffer.from('<svg/>'), 'image/svg+xml')).status).toBe(415);
   expect((await upload(admin, Buffer.from('not an image'), 'image/png')).status).toBe(400);
   expect((await upload(admin, Buffer.alloc(0), 'image/png')).status).toBe(400);
-  expect((await upload(admin, Buffer.alloc(5 * 1024 * 1024 + 1), 'image/png')).status).toBe(413);
+  expect((await upload(admin, Buffer.alloc(4 * 1024 * 1024 + 1), 'image/png')).status).toBe(413);
   const huge = await sharp({create: {width: 6000, height: 6000, channels: 3, background: 'white'}})
     .png()
     .toBuffer();

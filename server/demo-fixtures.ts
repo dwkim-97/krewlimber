@@ -1,11 +1,11 @@
 import {existsSync, realpathSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {basename, dirname, resolve} from 'node:path';
-import type {DatabaseSync} from 'node:sqlite';
+import type {Database} from './database';
 import type {ActivityCounts, Grade, MemberStatus, Role} from '../src/types';
 import {EMPTY_COUNTS} from '../src/consts/progression';
 import {createAccount} from './auth';
-import {transaction} from './db';
+import {transaction} from './database';
 import {currentQuarter, getAchievements, setActivityCounts, setFeaturedAchievement} from './progression';
 
 export const DEMO_PASSWORD = 'Krew-Test-2026!';
@@ -136,12 +136,12 @@ export function assertDemoDatabase(path: string, environment: 'development' | 'p
     throw new Error('Database symlinks are not allowed.');
 }
 
-export async function seedDemoUsers(db: DatabaseSync) {
+export async function seedDemoUsers(db: Database) {
   const quarter = currentQuarter(new Date());
   const [year, part] = quarter.split('-Q');
   const previous = Number(part) === 1 ? `${Number(year) - 1}-Q4` : `${year}-Q${Number(part) - 1}`;
   for (const fixture of fixtures) {
-    const existing = db.prepare('SELECT id FROM users WHERE username=?').get(fixture.username) as
+    const existing = (await db.prepare('SELECT id FROM users WHERE username=?').get(fixture.username)) as
       {id: string} | undefined;
     const user =
       existing ??
@@ -152,23 +152,25 @@ export async function seedDemoUsers(db: DatabaseSync) {
         role: fixture.role,
         status: fixture.status,
       }));
-    transaction(db, () => {
-      db.prepare('UPDATE users SET nickname=?,grade=?,bio=?,location=?,gym=? WHERE id=?').run(
-        fixture.nickname,
-        fixture.grade,
-        '화면 확인용 테스트 유저입니다.',
-        '테스트 지역',
-        '더클라임 · 테스트',
-        user.id
-      );
-      setActivityCounts(db, user.id, previous, fixture.previous);
-      setActivityCounts(db, user.id, quarter, fixture.current);
+    await transaction(db, async () => {
+      await db
+        .prepare('UPDATE users SET nickname=?,grade=?,bio=?,location=?,gym=? WHERE id=?')
+        .run(
+          fixture.nickname,
+          fixture.grade,
+          '화면 확인용 테스트 유저입니다.',
+          '테스트 지역',
+          '더클라임 · 테스트',
+          user.id
+        );
+      await setActivityCounts(db, user.id, previous, fixture.previous);
+      await setActivityCounts(db, user.id, quarter, fixture.current);
       if (
         fixture.featured &&
-        getAchievements(db, user.id).achievements.some(item => item.id === fixture.featured && item.earned)
+        (await getAchievements(db, user.id)).achievements.some(item => item.id === fixture.featured && item.earned)
       )
-        setFeaturedAchievement(db, user.id, fixture.featured);
-      else if (fixture.featured === null) setFeaturedAchievement(db, user.id, null);
+        await setFeaturedAchievement(db, user.id, fixture.featured);
+      else if (fixture.featured === null) await setFeaturedAchievement(db, user.id, null);
     });
   }
   return {users: fixtures.length, quarter};

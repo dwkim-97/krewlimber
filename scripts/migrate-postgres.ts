@@ -1,4 +1,4 @@
-import {readFileSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import {config} from 'dotenv';
 import {environmentFile} from '../server/environment';
 import {createPostgresPool, postgresTransaction} from '../server/postgres';
@@ -12,11 +12,17 @@ try {
     );
     await client.query('ALTER TABLE krew_schema_migrations ENABLE ROW LEVEL SECURITY');
     await client.query('REVOKE ALL ON TABLE krew_schema_migrations FROM anon, authenticated');
-    const version = '202611060001';
-    if ((await client.query('SELECT version FROM krew_schema_migrations WHERE version=$1', [version])).rowCount) return;
-    const source = readFileSync(new URL('../supabase/migrations/202611060001_initial.sql', import.meta.url), 'utf8');
-    await client.query(source.replace(/^BEGIN;$/m, '').replace(/^COMMIT;$/m, ''));
-    await client.query('INSERT INTO krew_schema_migrations(version) VALUES($1)', [version]);
+    const directory = new URL('../supabase/migrations/', import.meta.url);
+    for (const file of readdirSync(directory)
+      .filter(name => /^\d+.*\.sql$/.test(name))
+      .sort()) {
+      const version = file.split('_')[0];
+      if ((await client.query('SELECT version FROM krew_schema_migrations WHERE version=$1', [version])).rowCount)
+        continue;
+      const source = readFileSync(new URL(file, directory), 'utf8');
+      await client.query(source.replace(/^BEGIN;$/m, '').replace(/^COMMIT;$/m, ''));
+      await client.query('INSERT INTO krew_schema_migrations(version) VALUES($1)', [version]);
+    }
   });
   console.log('PostgreSQL migrations applied.');
 } finally {

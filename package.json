@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.13.0"
+    "node": "24.x"
   },
   "scripts": {
     "dev": "tsx watch server/index.ts",
@@ -21,7 +21,9 @@
     "demo:seed": "tsx scripts/seed-demo.ts",
     "demo:boards": "tsx scripts/seed-boards.ts",
     "supabase:check": "tsx scripts/check-supabase.ts",
-    "supabase:migrate": "tsx scripts/migrate-postgres.ts"
+    "supabase:migrate": "tsx scripts/migrate-postgres.ts",
+    "supabase:import": "tsx scripts/import-sqlite.ts",
+    "supabase:smoke": "tsx scripts/smoke-supabase.ts"
   },
   "dependencies": {
     "dotenv": "18.0.9",

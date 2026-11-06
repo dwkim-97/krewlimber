@@ -19,7 +19,7 @@
 
 ## 로컬 실행
 
-Node 22.13 이상(운영은 Node 24 권장), pnpm 10을 사용합니다.
+Node 24와 pnpm 10을 사용합니다.
 
 ```sh
 pnpm install
@@ -27,7 +27,7 @@ cp deploy/.env.local.sample deploy/.env.local
 pnpm dev
 ```
 
-주소: http://localhost:4173. `HOST=127.0.0.1`, `APP_ORIGIN=http://localhost:4173`가 기본입니다. 접속 주소와 APP_ORIGIN이 정확히 일치해야 변경 요청을 허용합니다. 회원 데이터는 `data/krewlimber.sqlite`에 영구 저장되며 Git에 포함하지 않습니다.
+주소: http://localhost:4173. `HOST=127.0.0.1`, `APP_ORIGIN=http://localhost:4173`가 기본입니다. 접속 주소와 APP_ORIGIN이 정확히 일치해야 변경 요청을 허용합니다. 앱의 회원 데이터는 Supabase PostgreSQL에 저장하고 상품 이미지는 비공개 Storage 버킷에 저장합니다. `deploy/.env.local`에 PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY를 설정해야 합니다. 키는 브라우저에 전달하지 않습니다. 기존 SQLite는 이전 원본·테스트 용도로 보존합니다.
 
 `PHASE`로 `deploy/.env.local`, `deploy/.env.production` 등 환경 파일을 선택합니다. 서버와 관리자 생성 명령은 같은 선택 규칙을 사용하며, NODE_ENV=production이면 기본으로 deploy/.env.production을 읽습니다. 외부에서 지정한 환경변수가 파일 값보다 우선합니다.
 
@@ -56,7 +56,7 @@ pnpm build
 
 ## 운영 배포
 
-지속적으로 켜져 있는 Node 서버와 영구 디스크가 필요합니다. 정적 GitHub Pages나 임시 파일시스템 서버리스 호스팅에는 사용할 수 없습니다. 현재 저장소에는 외부 서비스 계정이나 도메인이 연결되어 있지 않습니다.
+지속적으로 켜져 있는 Node 서버와 영구 디스크가 필요합니다. 정적 GitHub Pages나 임시 파일시스템 서버리스 호스팅에는 사용할 수 없습니다. Vercel Hobby + Supabase Free 배포 구성을 포함합니다. 자세한 전환 절차는 아래를 참고하세요.
 
 1. 도메인의 HTTPS를 처리하는 리버스 프록시와 영구 디스크가 있는 서버를 준비합니다.
 2. 운영 환경에 APP_ORIGIN(실제 HTTPS 출처)과 TRUST_PROXY(백엔드가 관측하는 실제 프록시 IP 또는 CIDR)를 설정한 뒤 `docker compose up --build -d`로 실행합니다. 운영 서버는 TRUST_PROXY 누락 시 시작하지 않습니다. 전체 주소를 신뢰하도록 설정하지 말고, 프록시가 외부의 X-Forwarded-For 값을 덮어쓰거나 올바르게 추가하도록 구성합니다.
@@ -108,6 +108,25 @@ test
 
 테스트 상품·공지·포인트·신청 예시는 기존 임시 테스트 계정을 만든 뒤 `DEMO_DATABASE_PATH`를 지정하고 `pnpm demo:boards`로 추가합니다. `demo:seed`와 같은 임시 DB 경로 제한을 적용하며 운영 모드는 거부합니다. 반복 실행해도 이미 변경한 상품·포인트 잔액·교환 내역을 초기화하지 않습니다.
 
-운영진은 마켓 상단의 상품 등록과 상품 상세의 상품 수정에서 이미지 파일과 판매 상태를 관리할 수 있습니다. 판매 중지 상품은 회원 목록에서 숨겨지며 크루 관리의 마켓 관리에서 다시 판매할 수 있습니다. JPG·PNG·WebP(최대 5MB, 2,500만 화소)를 선택하면 미리보기를 표시하고 저장 시 서버에 업로드합니다. 서버는 긴 변 최대 1800px WebP로 다시 저장하며, 이미지 조회에도 승인 회원 권한을 검사합니다.
+운영진은 마켓 상단의 상품 등록과 상품 상세의 상품 수정에서 이미지 파일과 판매 상태를 관리할 수 있습니다. 판매 중지 상품은 회원 목록에서 숨겨지며 크루 관리의 마켓 관리에서 다시 판매할 수 있습니다. JPG·PNG·WebP(최대 4MB, 2,500만 화소)를 선택하면 미리보기를 표시하고 저장 시 서버에 업로드합니다. 서버는 긴 변 최대 1800px WebP로 다시 저장하며, 이미지 조회에도 승인 회원 권한을 검사합니다.
 
 업로드 파일 저장 위치는 `UPLOADS_DIR`로 지정합니다. 기본값은 `DATABASE_PATH` 파일과 같은 디렉터리의 `uploads`이며, 기존 Docker 영구 볼륨 `/app/data`에 함께 저장됩니다. 운영 서버에 옮길 때 SQLite DB와 uploads 디렉터리를 함께 이전·백업해야 합니다. DB만 복구하면 상품 이미지는 복구되지 않습니다. 기존 교환 내역의 이미지 보존을 위해 업로드 파일은 자동 삭제하지 않습니다.
+
+
+## Vercel + Supabase
+
+실서비스 서버는 PostgreSQL을 사용합니다. SQLite는 기존 데이터 이전과 독립된 테스트/데모 fixture에만 사용합니다. Supabase Auth 대신 기존 아이디·비밀번호·승인·세션을 유지합니다.
+
+1. Node 24에서 `pnpm install --frozen-lockfile`을 실행합니다.
+2. `deploy/.env.production.sample`을 참고하여 Git에서 제외되는 `deploy/.env.production`에 PG 연결 값과 Storage 서버 키를 입력합니다. Transaction pooler(6543)를 사용하며 공식 Supabase CA 인증서 검증을 유지합니다.
+3. `pnpm supabase:check`로 접속을 확인하고 `pnpm supabase:migrate`로 마이그레이션을 적용합니다. 마이그레이션은 명시적으로 실행하며 앱 시작 때 실행하지 않습니다.
+4. 기존 SQLite가 있을 때만 `pnpm supabase:import`를 한 번 실행합니다. 원본 백업을 만든 뒤 비어 있는 대상에 회원·기록·이미지를 이전하며 세션·복구 코드는 이전하지 않습니다. 기존 사용자가 있는 대상에는 덮어쓰기를 거부합니다.
+5. private `market-images` 버킷을 만들고 `SUPABASE_SERVICE_ROLE_KEY`에 서버 전용 secret key를 설정합니다. 신규 `sb_secret_` 키와 기존 service-role JWT를 지원합니다. 브라우저 공개 키로 대체하지 않습니다.
+6. Vercel 프로젝트에 PGHOST, PGPORT, PGDATABASE, PGUSER, PGPASSWORD, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 및 정확한 HTTPS APP_ORIGIN을 Production 환경변수로 등록합니다. 비밀은 sensitive로 저장합니다. VITE_ 접두사를 사용하지 않습니다.
+7. `vercel --prod`로 배포합니다. 처음에는 vercel.app 도메인을 사용하며, 도메인을 변경하면 APP_ORIGIN도 바꾸고 재배포합니다. 임의 Preview 도메인은 변경 요청 출처로 허용하지 않습니다. 운영 DB를 Preview 기능 테스트에 공유하지 마세요.
+
+로컬 개발도 `deploy/.env.local`의 PostgreSQL/Storage 설정을 사용합니다. 두 환경 파일에 동일한 DB를 지정하면 실제 데이터를 함께 변경하므로 개발·운영 DB 분리를 권장합니다. SQLite 원본의 세션은 이전하지 않으므로 기존 회원은 이전한 비밀번호로 다시 로그인합니다. `SMOKE_USERNAME=<승인 회원 아이디> pnpm supabase:smoke`는 실제 DB의 회원 읽기 API를 확인하고 테스트 세션을 즉시 폐기합니다.
+
+Vercel API 진입점은 플랫폼이 덮어쓰는 X-Forwarded-For 한 홉을 신뢰합니다. 일반 Node 서버에서는 TRUST_PROXY에 실제 리버스 프록시 IP/CIDR을 지정합니다. 로그인 제한은 PostgreSQL에서 공유하며 주문·포인트·취소는 같은 연결의 트랜잭션과 DB advisory lock으로 직렬화합니다. 이미지 입력 한도는 Vercel 요청 크기를 고려해 4MB입니다. 포인트·회원·공지 기능은 기존 경로를 유지합니다.
+
+Supabase Free는 비활성 시 중지될 수 있고 자동 백업을 제공하지 않으므로, PostgreSQL과 private Storage 이미지를 별도로 백업해야 합니다. 유료 플랜 자동 전환이나 결제 수단 등록은 이 구성에 포함하지 않습니다.

@@ -2,7 +2,7 @@ import {resolve} from 'node:path';
 import {createInterface} from 'node:readline/promises';
 import {config} from 'dotenv';
 import {createAccount} from '../server/auth';
-import {openDatabase} from '../server/db';
+import {openPostgresDatabase} from '../server/database';
 import {environmentFile} from '../server/environment';
 import {usernameSchema, passwordSchema, nicknameSchema} from '../server/validation';
 import {readPassword} from './read-password';
@@ -20,10 +20,10 @@ try {
 }
 const password = passwordSchema.parse(await readPassword('비밀번호 (4자 이상, 화면에 표시되지 않음): '));
 if (password !== (await readPassword('비밀번호 확인: '))) throw new Error('Passwords do not match.');
-const db = openDatabase(process.env.DATABASE_PATH ?? './data/krewlimber.sqlite');
+const db = openPostgresDatabase();
 try {
   await createAccount(db, {username, nickname, password, role: 'admin', status: 'approved'});
   console.log(`관리자 @${username} 생성 완료. 로그인 화면에서 접속할 수 있습니다.`);
 } finally {
-  db.close();
+  await db.close();
 }

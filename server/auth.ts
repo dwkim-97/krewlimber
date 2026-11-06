@@ -1,5 +1,5 @@
 import {createHash, randomBytes, randomUUID, scrypt, timingSafeEqual} from 'node:crypto';
-import type {DatabaseSync} from 'node:sqlite';
+import type {Database} from './database';
 import type {Request, Response} from 'express';
 import type {MemberStatus, Role, User} from '../src/types';
 
@@ -38,7 +38,7 @@ export function hashToken(token: string) {
 }
 
 export async function createAccount(
-  db: DatabaseSync,
+  db: Database,
   input: {
     username: string;
     password: string;
@@ -49,19 +49,21 @@ export async function createAccount(
 ): Promise<User> {
   const id = randomUUID();
   const passwordHash = await hashPassword(input.password);
-  db.prepare(
-    `INSERT INTO users (id, username, passwordHash, nickname, role, status, createdAt)
+  await db
+    .prepare(
+      `INSERT INTO users (id, username, passwordHash, nickname, role, status, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, ?)`
-  ).run(
-    id,
-    input.username.trim().toLowerCase(),
-    passwordHash,
-    input.nickname,
-    input.role,
-    input.status,
-    new Date().toISOString()
-  );
-  return db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(id) as unknown as User;
+    )
+    .run(
+      id,
+      input.username.trim().toLowerCase(),
+      passwordHash,
+      input.nickname,
+      input.role,
+      input.status,
+      new Date().toISOString()
+    );
+  return (await db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(id)) as unknown as User;
 }
 
 function sessionToken(req: Request) {
@@ -73,10 +75,10 @@ function sessionToken(req: Request) {
   return /^[a-f0-9]{64}$/.test(token) ? token : '';
 }
 
-export function sessionUser(db: DatabaseSync, req: Request): User | null {
+export async function sessionUser(db: Database, req: Request): Promise<User | null> {
   const token = sessionToken(req);
   if (!token) return null;
-  const record = db
+  const record = await db
     .prepare(
       `SELECT ${userColumns
         .split(', ')
@@ -89,18 +91,16 @@ export function sessionUser(db: DatabaseSync, req: Request): User | null {
   return (record as unknown as User) ?? null;
 }
 
-export function createSession(db: DatabaseSync, res: Response, userId: string, secure: boolean) {
+export async function createSession(db: Database, res: Response, userId: string, secure: boolean) {
   const token = randomBytes(32).toString('hex');
-  db.prepare('DELETE FROM sessions WHERE expiresAt <= ?').run(Date.now());
-  db.prepare('INSERT INTO sessions (tokenHash, userId, expiresAt) VALUES (?, ?, ?)').run(
-    hashToken(token),
-    userId,
-    Date.now() + sessionLifetime
-  );
+  await db.prepare('DELETE FROM sessions WHERE expiresAt <= ?').run(Date.now());
+  await db
+    .prepare('INSERT INTO sessions (tokenHash, userId, expiresAt) VALUES (?, ?, ?)')
+    .run(hashToken(token), userId, Date.now() + sessionLifetime);
   res.cookie(cookieName, token, {httpOnly: true, sameSite: 'lax', secure, path: '/', maxAge: sessionLifetime});
 }
 
-export function endSession(db: DatabaseSync, req: Request, res: Response, secure: boolean) {
-  db.prepare('DELETE FROM sessions WHERE tokenHash = ?').run(hashToken(sessionToken(req)));
+export async function endSession(db: Database, req: Request, res: Response, secure: boolean) {
+  await db.prepare('DELETE FROM sessions WHERE tokenHash = ?').run(hashToken(sessionToken(req)));
   res.clearCookie(cookieName, {httpOnly: true, sameSite: 'lax', secure, path: '/'});
 }

@@ -16,7 +16,7 @@ beforeEach(() => {
 afterEach(() => db.close());
 
 async function account(username: string, role: 'member' | 'admin', status: 'pending' | 'approved') {
-  return createAccount(db, {username, password, nickname: username, role, status});
+  return await createAccount(db, {username, password, nickname: username, role, status});
 }
 
 async function login(username: string) {
@@ -69,7 +69,7 @@ describe('own-account authentication', () => {
     expect(response.body.user).toMatchObject({username: 'aiden.dw', status: 'pending', role: 'member'});
     expect(JSON.stringify(response.body)).not.toContain(password);
     expect(response.headers['set-cookie'][0]).toContain('HttpOnly');
-    const stored = db.prepare('SELECT passwordHash FROM users').get() as {passwordHash: string};
+    const stored = (await db.prepare('SELECT passwordHash FROM users').get()) as {passwordHash: string};
     expect(stored.passwordHash).not.toBe(password);
     const session = await agent.get('/api/me');
     expect(session.body.user.username).toBe('aiden.dw');
@@ -129,7 +129,7 @@ describe('own-account authentication', () => {
     ).headers['set-cookie'].at(-1)!;
     expect((await agent.post('/api/auth/logout').set('Origin', origin)).status).toBe(200);
     expect((await agent.get('/api/me')).body.user).toBeNull();
-    db.prepare('UPDATE sessions SET expiresAt = 0').run();
+    await db.prepare('UPDATE sessions SET expiresAt = 0').run();
     expect((await request(app).get('/api/me').set('Cookie', cookie)).body.user).toBeNull();
   });
 
@@ -139,7 +139,7 @@ describe('own-account authentication', () => {
     expect((await request(app).post('/api/auth/signup').set('Origin', 'https://evil.example').send(data)).status).toBe(
       403
     );
-    expect(db.prepare('SELECT count(*) AS n FROM users').get()).toMatchObject({n: 0});
+    expect(await db.prepare('SELECT count(*) AS n FROM users').get()).toMatchObject({n: 0});
   });
 
   it('throttles repeated invalid logins', async () => {
@@ -179,7 +179,7 @@ describe('membership authorization', () => {
     expect((await user.get('/api/members')).body.members).toEqual(
       expect.arrayContaining([expect.objectContaining({nickname: 'aiden.dw'})])
     );
-    expect(db.prepare('SELECT count(*) AS n FROM auditLog').get()).toMatchObject({n: 1});
+    expect(await db.prepare('SELECT count(*) AS n FROM auditLog').get()).toMatchObject({n: 1});
     expect(JSON.stringify((await user.get('/api/members')).body)).not.toContain('passwordHash');
   });
 
@@ -291,7 +291,7 @@ describe('membership authorization', () => {
     expect((await request(app).post('/api/auth/recover').set('Origin', origin).send(payload)).status).toBe(400);
     expect((await user.get('/api/me')).body.user).toBeNull();
     const second = await admin.post(`/api/admin/users/${member.id}/recovery`).set('Origin', origin);
-    db.prepare('UPDATE recoveryTokens SET expiresAt = 0').run();
+    await db.prepare('UPDATE recoveryTokens SET expiresAt = 0').run();
     expect(
       (
         await request(app)

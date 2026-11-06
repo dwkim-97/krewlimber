@@ -18,24 +18,22 @@ it('seeds varied demo cases idempotently without replacing existing admin creden
       role: 'admin',
       status: 'approved',
     });
-    db.prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)').run(
-      'existing',
-      admin.id,
-      Date.now() + 60000
-    );
+    await db
+      .prepare('INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES(?,?,?)')
+      .run('existing', admin.id, Date.now() + 60000);
     await seedDemoUsers(db);
     await seedDemoUsers(db);
-    expect(db.prepare('SELECT count(*) AS n FROM users').get()).toMatchObject({n: 10});
-    expect(db.prepare('SELECT userId FROM sessions WHERE tokenHash=?').get('existing')).toMatchObject({
+    expect(await db.prepare('SELECT count(*) AS n FROM users').get()).toMatchObject({n: 10});
+    expect(await db.prepare('SELECT userId FROM sessions WHERE tokenHash=?').get('existing')).toMatchObject({
       userId: admin.id,
     });
-    const row = db.prepare('SELECT passwordHash FROM users WHERE id=?').get(admin.id) as {passwordHash: string};
+    const row = (await db.prepare('SELECT passwordHash FROM users WHERE id=?').get(admin.id)) as {passwordHash: string};
     expect(await verifyPassword('an existing private password', row.passwordHash)).toBe(true);
-    const board = getTitleBoard(db, currentQuarter(new Date()));
+    const board = await getTitleBoard(db, currentQuarter(new Date()));
     expect(board.categories.find(x => x.id === 'participation')!.standings[0].nickname).toBe('에이든 · 테스트');
     expect(board.categories.find(x => x.id === 'purple')!.standings.filter(x => x.rank === 1)).toHaveLength(2);
-    const rookie = db.prepare("SELECT id FROM users WHERE username='test.rookie'").get() as {id: string};
-    expect(getAchievements(db, rookie.id).achievements.some(x => x.earned)).toBe(false);
+    const rookie = (await db.prepare("SELECT id FROM users WHERE username='test.rookie'").get()) as {id: string};
+    expect((await getAchievements(db, rookie.id)).achievements.some(x => x.earned)).toBe(false);
   } finally {
     db.close();
   }
