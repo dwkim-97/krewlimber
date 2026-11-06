@@ -76,10 +76,25 @@ describe('own-account authentication', () => {
     expect((await agent.get('/api/members')).status).toBe(403);
   });
 
+  it('accepts a four-character signup password and allows logging in with it', async () => {
+    const response = await request(app)
+      .post('/api/auth/signup')
+      .set('Origin', origin)
+      .send({username: 'short.pass', password: '1234', nickname: '새회원'});
+    expect(response.status).toBe(201);
+    expect(response.body.user.status).toBe('pending');
+    const loggedIn = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send({username: 'short.pass', password: '1234'});
+    expect(loggedIn.status).toBe(200);
+    expect(loggedIn.body.user.username).toBe('short.pass');
+  });
+
   it('rejects malformed and duplicate IDs and weak passwords', async () => {
     for (const data of [
       {username: 'a b', password, nickname: '에이든'},
-      {username: 'aiden.dw', password: 'short', nickname: '에이든'},
+      {username: 'aiden.dw', password: '123', nickname: '에이든'},
       {username: 'aiden.dw', password, nickname: ''},
     ]) {
       expect((await request(app).post('/api/auth/signup').set('Origin', origin).send(data)).status).toBe(400);
@@ -227,11 +242,15 @@ describe('membership authorization', () => {
     const user = await login('aiden.dw');
     const otherSession = await login('aiden.dw');
     expect(
+      (await user.patch('/api/me/password').set('Origin', origin).send({currentPassword: password, newPassword: '123'}))
+        .status
+    ).toBe(400);
+    expect(
       (
         await user
           .patch('/api/me/password')
           .set('Origin', origin)
-          .send({currentPassword: 'wrong password', newPassword: 'a new strong climbing passphrase'})
+          .send({currentPassword: 'wrong password', newPassword: '1234'})
       ).status
     ).toBe(401);
     expect(
@@ -239,11 +258,16 @@ describe('membership authorization', () => {
         await user
           .patch('/api/me/password')
           .set('Origin', origin)
-          .send({currentPassword: password, newPassword: 'a new strong climbing passphrase'})
+          .send({currentPassword: password, newPassword: '1234'})
       ).status
     ).toBe(200);
     expect((await otherSession.get('/api/me')).body.user).toBeNull();
     expect((await user.get('/api/me')).body.user).toBeNull();
+    const loggedIn = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', origin)
+      .send({username: 'aiden.dw', password: '1234'});
+    expect(loggedIn.status).toBe(200);
   });
 
   it('uses expiring, single-use recovery tokens issued only by administrators', async () => {
@@ -254,7 +278,7 @@ describe('membership authorization', () => {
     const admin = await login('owner');
     const issued = await admin.post(`/api/admin/users/${member.id}/recovery`).set('Origin', origin);
     expect(issued.status).toBe(201);
-    const payload = {username: 'aiden.dw', token: issued.body.token, newPassword: 'replacement climbing password'};
+    const payload = {username: 'aiden.dw', token: issued.body.token, newPassword: '1234'};
     expect(
       (
         await request(app)

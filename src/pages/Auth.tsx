@@ -105,10 +105,10 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
               <input
                 name="password"
                 type="password"
-                placeholder={mode === 'login' ? '비밀번호를 입력해주세요' : '12자 이상의 비밀번호'}
+                placeholder={mode === 'login' ? '비밀번호를 입력해주세요' : '4자 이상의 비밀번호'}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 required
-                minLength={mode === 'login' ? 1 : 12}
+                minLength={mode === 'login' ? 1 : 4}
                 maxLength={128}
               />
             </label>
@@ -121,7 +121,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
                   placeholder="한 번 더 입력해주세요"
                   autoComplete="new-password"
                   required
-                  minLength={12}
+                  minLength={4}
                   maxLength={128}
                 />
               </label>

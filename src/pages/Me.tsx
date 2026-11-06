@@ -213,9 +213,9 @@ export function Me() {
                         type="password"
                         autoComplete="new-password"
                         required
-                        minLength={12}
+                        minLength={4}
                         maxLength={128}
-                        placeholder="12자 이상"
+                        placeholder="4자 이상"
                       />
                     </label>
                     <label>
@@ -225,7 +225,7 @@ export function Me() {
                         type="password"
                         autoComplete="new-password"
                         required
-                        minLength={12}
+                        minLength={4}
                         maxLength={128}
                       />
                     </label>

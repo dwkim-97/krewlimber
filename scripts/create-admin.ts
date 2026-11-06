@@ -18,7 +18,7 @@ try {
 } finally {
   reader.close();
 }
-const password = passwordSchema.parse(await readPassword('비밀번호 (12자 이상, 화면에 표시되지 않음): '));
+const password = passwordSchema.parse(await readPassword('비밀번호 (4자 이상, 화면에 표시되지 않음): '));
 if (password !== (await readPassword('비밀번호 확인: '))) throw new Error('Passwords do not match.');
 const db = openDatabase(process.env.DATABASE_PATH ?? './data/krewlimber.sqlite');
 try {
