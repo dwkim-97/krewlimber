@@ -21,6 +21,7 @@ it('removes old private resources immediately when the authenticated member chan
     vi.fn(async () => new Response(JSON.stringify({balance})))
   );
   const user: User = {
+ level:0,
     fullName: '홍길동',
     id: 'a',
     username: 'account.a',

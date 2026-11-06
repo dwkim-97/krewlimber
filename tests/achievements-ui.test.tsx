@@ -94,28 +94,37 @@ it('clears the previous account achievements when the active session changes', a
   vi.stubGlobal(
     'fetch',
     vi.fn(
-      async () =>
+      async (url: string) =>
         new Response(
-          JSON.stringify({
-            featuredAchievementId: null,
-            achievements: [
-              {
-                id: activeId,
-                name: `${activeId}의 업적`,
-                description: `${activeId}의 기록`,
-                metric: 'red',
-                target: 50,
-                progress: 50,
-                earned: true,
-                featured: false,
-              },
-            ],
-          }),
+          JSON.stringify(
+            url === '/api/me/level'
+              ? {
+                  level: 0,
+
+                  inputs: {visits: 0, sends: 0, gyms: 0, earnedAchievements: [], byGrade: []},
+                }
+              : {
+                  featuredAchievementId: null,
+                  achievements: [
+                    {
+                      id: activeId,
+                      name: `${activeId}의 업적`,
+                      description: `${activeId}의 기록`,
+                      metric: 'red',
+                      target: 50,
+                      progress: 50,
+                      earned: true,
+                      featured: false,
+                    },
+                  ],
+                }
+          ),
           {status: 200}
         )
     )
   );
   const user: User = {
+    level: 0,
     fullName: '홍길동',
     id: 'a',
     username: 'account.a',

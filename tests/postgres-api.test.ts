@@ -1,31 +1,10 @@
-import {readFileSync} from 'node:fs';
-import {PGlite} from '@electric-sql/pglite';
 import request from 'supertest';
 import {expect, it} from 'vitest';
 import {createApp} from '../server/app';
-import {PostgresDatabase} from '../server/database';
+import {openPostgresTestDatabase} from './postgres-test-db';
 
 it('runs signup, session and profile APIs against PostgreSQL', async () => {
-  const engine = new PGlite();
-  await engine.exec('CREATE ROLE anon; CREATE ROLE authenticated;');
-  await engine.exec(readFileSync('supabase/migrations/202611060001_initial.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060002_rate_limits.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060003_staff_role.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060004_member_names.sql', 'utf8'));
-  const db = new PostgresDatabase({
-    query: async (sql, values) => {
-      const r = await engine.query(sql, values);
-      return {rows: r.rows as Record<string, unknown>[], rowCount: r.affectedRows ?? r.rows.length};
-    },
-    connect: async () => ({
-      query: async (sql, values) => {
-        const r = await engine.query(sql, values);
-        return {rows: r.rows as Record<string, unknown>[], rowCount: r.affectedRows ?? r.rows.length};
-      },
-      release() {},
-    }),
-    end: async () => engine.close(),
-  });
+  const db = await openPostgresTestDatabase();
   try {
     const origin = 'http://localhost:4173';
     const app = createApp({db, origin, secureCookies: false, trustProxy: false});
@@ -39,7 +18,7 @@ it('runs signup, session and profile APIs against PostgreSQL', async () => {
       ).status
     ).toBe(201);
     const current = await agent.get('/api/me');
-    expect(current.body.user).toMatchObject({username: 'pg.member', status: 'pending', nickname: '크루'});
+    expect(current.body.user).toMatchObject({username: 'pg.member', status: 'pending', nickname: '크루', level: 0});
     expect(current.body.user.passwordHash).toBeUndefined();
     expect((await agent.get('/api/members')).status).toBe(403);
     await db.prepare("UPDATE users SET status='approved' WHERE username=?").run('pg.member');

@@ -23,7 +23,7 @@ it('migrates v2 without changing existing accounts, sessions or achievement defi
     );
     db.close();
     db = openDatabase(file);
-    expect((await db.prepare('PRAGMA user_version').get())!.user_version).toBe(5);
+    expect((await db.prepare('PRAGMA user_version').get())!.user_version).toBe(6);
     expect((await db.prepare("SELECT passwordHash FROM users WHERE id='existing'").get())!.passwordHash).toBe(
       'old-hash'
     );

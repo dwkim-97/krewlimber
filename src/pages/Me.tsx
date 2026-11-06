@@ -1,7 +1,10 @@
 import {ROLE_LABELS} from '@/consts/roles';
-import {Check, Clock3, KeyRound, LogOut, ShieldCheck} from 'lucide-react';
+import {Check, Clock3, KeyRound, LogOut, ShieldCheck, Mountain, UserRound, Award} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
+import {Climbing} from '@/pages/Climbing';
+import {LevelSummary} from '@/components/LevelSummary';
+import '@/styles/climbing.css';
 import {Achievements} from '@/components/Achievements';
 import {Avatar, ErrorNotice, PageHeading, TextLink} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
@@ -14,9 +17,11 @@ export function Me() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [climbingRevision, setClimbingRevision] = useState(0);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'achievements' ? 'achievements' : 'profile';
+  const tab =
+    params.get('tab') === 'climbing' ? 'climbing' : params.get('tab') === 'achievements' ? 'achievements' : 'profile';
   if (!user) return null;
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,7 +75,15 @@ export function Me() {
   const approved = user.status === 'approved';
   return (
     <div className="page-shell">
-      <PageHeading title="내 정보">{approved && <TextLink to="/me/orders">내 포인트·교환</TextLink>}</PageHeading>
+      <PageHeading title="내 정보">
+        {approved && (
+          <div className="climbing-actions">
+            <TextLink to="/market">포인트 마켓</TextLink>
+            <TextLink to="/me/orders">내 포인트·교환</TextLink>
+          </div>
+        )}
+      </PageHeading>
+      {approved && <LevelSummary key={`${user.id}-${climbingRevision}`} />}
       <div className="profile-layout">
         <aside className="profile-summary">
           <Avatar name={user.nickname} index={0} />
@@ -93,10 +106,15 @@ export function Me() {
         <div className="profile-content">
           <div className="tabs" aria-label="내 정보 메뉴">
             <button className={tab === 'profile' ? 'active' : ''} onClick={() => setParams({tab: 'profile'})}>
-              프로필
+              <UserRound size={15} aria-hidden="true" /> 프로필
             </button>
+            {approved && (
+              <button className={tab === 'climbing' ? 'active' : ''} onClick={() => setParams({tab: 'climbing'})}>
+                <Mountain size={15} aria-hidden="true" /> 등반 기록
+              </button>
+            )}
             <button className={tab === 'achievements' ? 'active' : ''} onClick={() => setParams({tab: 'achievements'})}>
-              업적
+              <Award size={15} aria-hidden="true" /> 업적
             </button>
           </div>
           {!approved && (
@@ -121,7 +139,11 @@ export function Me() {
             </div>
           )}
           {error && <ErrorNotice message={error} retry={null} />}
-          {tab === 'achievements' ? (
+          {tab === 'climbing' ? (
+            approved ? (
+              <Climbing key={user.id} embedded onRecordsChange={() => setClimbingRevision(value => value + 1)} />
+            ) : null
+          ) : tab === 'achievements' ? (
             <Achievements key={user.id} />
           ) : (
             <>

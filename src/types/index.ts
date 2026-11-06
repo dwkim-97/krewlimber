@@ -13,6 +13,7 @@ export interface Profile {
 }
 
 export interface User extends Profile {
+  level: number;
   id: string;
   username: string;
   role: Role;
@@ -26,6 +27,9 @@ export interface MemberProfile extends Profile {
 }
 
 export interface Member extends MemberProfile {
+  role: Role;
+  points: number;
+  level: number;
   titles: TitleBadge[];
   featuredAchievement: FeaturedAchievement | null;
 }
@@ -39,7 +43,16 @@ export interface MetricDefinition {
   label: string;
   unit: '회' | '개';
 }
+export interface AchievementCondition {
+  gymId: string;
+  gradeId: string;
+  gymName: string;
+  gradeName: string;
+  operator: 'eq' | 'gte';
+  difficultyRank: number;
+}
 export interface AchievementDefinition {
+  condition?: AchievementCondition;
   id: string;
   name: string;
   description: string;

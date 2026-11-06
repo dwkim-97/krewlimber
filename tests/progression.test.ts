@@ -201,17 +201,9 @@ describe('progression API', () => {
       (await regular.agent.get('/api/members')).body.members.find((x: {id: string}) => x.id === user.id)
         .featuredAchievement.name
     ).toBe('적색경보 해제');
-    const definition = {name: '빨강 맛보기', description: '[더클라임] 빨강 문제 10개 완등', metric: 'red', target: 10};
-    expect((await regular.agent.post('/api/admin/achievements').set('Origin', origin).send(definition)).status).toBe(
-      403
-    );
-    const created = await admin.agent.post('/api/admin/achievements').set('Origin', origin).send(definition);
-    expect(created.status).toBe(201);
-    expect(
-      (await regular.agent.get('/api/me/achievements')).body.achievements.find(
-        (x: {id: string}) => x.id === created.body.achievement.id
-      ).earned
-    ).toBe(true);
+    const definition = {name: '추가 불가', description: '추가 불가', metric: 'red', target: 10};
+    for (const agent of [regular.agent, admin.agent])
+      expect((await agent.post('/api/admin/achievements').set('Origin', origin).send(definition)).status).toBe(404);
     expect((await admin.agent.delete('/api/admin/achievements/theclimb-red-50').set('Origin', origin)).status).toBe(
       200
     );

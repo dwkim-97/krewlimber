@@ -1,0 +1,14 @@
+BEGIN;
+ALTER TABLE gymGrades ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE gyms ADD COLUMN placeId TEXT;
+CREATE UNIQUE INDEX gyms_place ON gyms(placeId) WHERE placeId IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS gymComments (
+ id TEXT PRIMARY KEY, gymId TEXT NOT NULL REFERENCES gyms(id), userId TEXT NOT NULL REFERENCES users(id),
+ body TEXT NOT NULL, createdAt TEXT NOT NULL, updatedAt TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS gymComments_gym ON gymComments(gymId,createdAt DESC,id DESC);
+
+ALTER TABLE gymComments ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON TABLE gymComments FROM anon,authenticated;
+COMMIT;
