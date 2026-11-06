@@ -15,11 +15,11 @@ it('migrates v2 without changing existing accounts, sessions or achievement defi
     db.prepare("INSERT INTO sessions(tokenHash,userId,expiresAt) VALUES('session','existing',9999999999999)").run();
     db.prepare("DELETE FROM achievementDefinitions WHERE id='theclimb-red-50'").run();
     db.exec(
-      'DROP TABLE pointLedger;DROP TABLE marketOrders;DROP TABLE marketProducts;DROP TABLE notices;PRAGMA user_version=2;'
+      'DROP TABLE pointLedger;DROP TABLE marketOrders;DROP TABLE marketProducts;DROP TABLE notices;DROP TABLE climbingColors;DROP TABLE climbingVisits;DROP TABLE climbingGyms;ALTER TABLE users DROP COLUMN instagramUrl;PRAGMA user_version=2;'
     );
     db.close();
     db = openDatabase(file);
-    expect(db.prepare('PRAGMA user_version').get()!.user_version).toBe(6);
+    expect(db.prepare('PRAGMA user_version').get()!.user_version).toBe(8);
     expect(db.prepare("SELECT passwordHash FROM users WHERE id='existing'").get()!.passwordHash).toBe('old-hash');
     expect(db.prepare('SELECT count(*) AS n FROM sessions').get()!.n).toBe(1);
     expect(db.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()!.n).toBe(14);

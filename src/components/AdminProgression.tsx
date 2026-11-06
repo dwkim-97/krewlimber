@@ -173,6 +173,7 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                     <div className="number-with-unit">
                       <input
                         type="number"
+                        readOnly={metric.id !== 'hosted' && metric.id !== 'attended'}
                         name={metric.id}
                         defaultValue={selected.counts[metric.id]}
                         min={0}
@@ -186,7 +187,7 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                 ))}
               </div>
               <div className="form-footer">
-                <span>타이틀은 분기별, 업적은 누적 기록으로 계산됩니다.</span>
+                <span>참여·완등은 방문 기록에서 자동 집계됩니다. 번개 개최·참여만 입력할 수 있어요.</span>
                 <button className="button button-dark button-small" disabled={busy}>
                   기록 저장
                   <Check size={16} />

@@ -22,14 +22,14 @@ it('extends v5 metric constraints without losing records, definition order or fe
       INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES('old','old.user','keep-hash','기존 회원','member','approved','2026-01-01');
       INSERT INTO sessions VALUES('keep-session','old',9999999999999);
       INSERT INTO activityStats VALUES('old','2026-Q4','purple',12);
-      INSERT INTO achievementDefinitions(rowid,id,name,description,metric,target) VALUES(7,'custom','기존 업적','보존','purple',10);
+      INSERT INTO achievementDefinitions(rowid,id,name,description,metric,target) VALUES(7,'custom','기존 업적','보존','hosted',10);
       INSERT INTO featuredAchievements VALUES('old','custom');
       INSERT INTO pointLedger(userId,amount,reason,actorId,kind,createdAt) VALUES('old',500,'기존 지급','old','grant','2026-10-01T00:00:00.000Z');
-      PRAGMA user_version=5;
+      DROP TABLE climbingColors;DROP TABLE climbingVisits;DROP TABLE climbingGyms;ALTER TABLE users DROP COLUMN instagramUrl;PRAGMA user_version=5;
     `);
     db.close();
     db = openDatabase(path);
-    expect(db.prepare('PRAGMA user_version').get()!.user_version).toBe(6);
+    expect(db.prepare('PRAGMA user_version').get()!.user_version).toBe(8);
     expect(db.prepare("SELECT passwordHash FROM users WHERE id='old'").get()!.passwordHash).toBe('keep-hash');
     expect(db.prepare('SELECT * FROM featuredAchievements').get()).toMatchObject({
       userId: 'old',

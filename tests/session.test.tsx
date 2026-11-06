@@ -11,6 +11,7 @@ const approved: User = {
   id: 'user-1',
   username: 'aiden.dw',
   nickname: '에이든',
+  instagramUrl: '',
   bio: '',
   location: '',
   gym: '',

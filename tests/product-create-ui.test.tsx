@@ -14,6 +14,7 @@ const user: User = {
   nickname: '운영진',
   role: 'admin',
   status: 'approved',
+  instagramUrl: '',
   bio: '',
   grade: '입문',
   location: '',

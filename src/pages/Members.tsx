@@ -1,4 +1,4 @@
-import {Award, MapPin, Mountain, Search, Users} from 'lucide-react';
+import {Award, Camera, MapPin, Mountain, Search, Users} from 'lucide-react';
 import {useState} from 'react';
 import {Avatar, EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
 import {InfoButton} from '@/components/InfoButton';
@@ -59,6 +59,17 @@ export function Members() {
                     <h3>{member.nickname}</h3>
                     <span className="grade-tag">{member.grade}</span>
                   </div>
+                  {member.instagramUrl && (
+                    <a
+                      className="member-instagram"
+                      href={member.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${member.nickname} 인스타그램`}
+                    >
+                      <Camera size={14} /> @{member.instagramUrl.split('/').filter(Boolean).at(-1)}
+                    </a>
+                  )}
                   {member.bio && <p className="member-bio">{member.bio}</p>}
                   {(member.location || member.gym) && (
                     <div className="member-meta">

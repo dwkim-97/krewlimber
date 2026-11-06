@@ -21,13 +21,15 @@ import {
 import {transaction} from './db';
 import {ApiError} from './errors';
 import {currentQuarter, decorateMembers} from './progression';
+import {registerClimbingRoutes} from './climbing-routes';
 import {registerProgressionRoutes} from './progression-routes';
 import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
 import {registerMarketImageRoutes} from './market-images';
-import {usernameSchema as username, passwordSchema as password, nicknameSchema} from './validation';
+import {usernameSchema as username, passwordSchema as password, nicknameSchema, instagramSchema} from './validation';
 
 const profileSchema = z.object({
+  instagramUrl: instagramSchema,
   nickname: nicknameSchema,
   bio: z.string().trim().max(200),
   location: z.string().trim().max(30),
@@ -186,14 +188,9 @@ export function createApp({
   app.patch('/api/me', (req, res) => {
     const user = requireUser(req);
     const input = profileSchema.parse(req.body);
-    db.prepare('UPDATE users SET nickname = ?, bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?').run(
-      input.nickname,
-      input.bio,
-      input.location,
-      input.gym,
-      input.grade,
-      user.id
-    );
+    db.prepare(
+      'UPDATE users SET nickname = ?, bio = ?, location = ?, gym = ?, grade = ?, instagramUrl = ? WHERE id = ?'
+    ).run(input.nickname, input.bio, input.location, input.gym, input.grade, input.instagramUrl, user.id);
     res.json({user: db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(user.id)});
   });
   app.patch('/api/me/password', async (req, res) => {
@@ -218,11 +215,12 @@ export function createApp({
     requireMember(req);
     const members = db
       .prepare(
-        "SELECT id,nickname,bio,location,gym,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
+        "SELECT id,nickname,bio,location,gym,instagramUrl,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
       )
       .all() as unknown as MemberProfile[];
     res.json({members: decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerClimbingRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketImageRoutes(app, uploadsDir, {member: requireMember, admin: requireAdmin, audit});

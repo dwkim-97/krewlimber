@@ -1,5 +1,6 @@
 import {expect, it} from 'vitest';
 import {createAccount, verifyPassword} from '../server/auth';
+import {canonicalGymId} from '../server/gym-catalog';
 import {openDatabase} from '../server/db';
 import {assertDemoDatabase, seedDemoUsers} from '../server/demo-fixtures';
 import {currentQuarter, getAchievements, getTitleBoard} from '../server/progression';
@@ -26,6 +27,8 @@ it('seeds varied demo cases idempotently without replacing existing admin creden
     await seedDemoUsers(db);
     await seedDemoUsers(db);
     expect(db.prepare('SELECT count(*) AS n FROM users').get()).toMatchObject({n: 10});
+    for (const row of db.prepare('SELECT gymId FROM climbingVisits').all())
+      expect(row.gymId).toBe(canonicalGymId(String(row.gymId)));
     expect(db.prepare('SELECT userId FROM sessions WHERE tokenHash=?').get('existing')).toMatchObject({
       userId: admin.id,
     });

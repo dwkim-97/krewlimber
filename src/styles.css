@@ -2688,3 +2688,16 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
 .achievement-goal-editor form {
   margin-top: 16px;
 }
+
+.member-instagram {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.member-instagram:hover {
+  color: var(--ink);
+}

@@ -5,6 +5,7 @@ import type {DatabaseSync} from 'node:sqlite';
 import type {ActivityCounts, Grade, MemberStatus, Role} from '../src/types';
 import {EMPTY_COUNTS} from '../src/consts/progression';
 import {createAccount} from './auth';
+import {seedDemoVisitCounts} from './demo-climbs';
 import {transaction} from './db';
 import {currentQuarter, getAchievements, setActivityCounts, setFeaturedAchievement} from './progression';
 
@@ -161,6 +162,8 @@ export async function seedDemoUsers(db: DatabaseSync) {
         '더클라임 · 테스트',
         user.id
       );
+      seedDemoVisitCounts(db, user.id, previous, fixture.previous);
+      seedDemoVisitCounts(db, user.id, quarter, fixture.current);
       setActivityCounts(db, user.id, previous, fixture.previous);
       setActivityCounts(db, user.id, quarter, fixture.current);
       if (

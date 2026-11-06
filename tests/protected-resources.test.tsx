@@ -27,6 +27,7 @@ it('removes old private resources immediately when the authenticated member chan
     role: 'member',
     status: 'approved',
     grade: 'V1',
+    instagramUrl: '',
     bio: '',
     gym: '',
     location: '',

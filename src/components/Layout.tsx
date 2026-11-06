@@ -41,6 +41,7 @@ export function Layout() {
                 <NavLink to="/" end>
                   베이스캠프
                 </NavLink>
+                <NavLink to="/climbs">클라이밍 기록</NavLink>
                 <NavLink to="/notices">공지사항</NavLink>
                 <NavLink to="/market">포인트 마켓</NavLink>
                 <NavLink to="/members">멤버</NavLink>

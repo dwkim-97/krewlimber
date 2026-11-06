@@ -58,6 +58,7 @@ it('explains a member title quarter and featured achievement condition', async (
     id: 'a',
     nickname: '에이든',
     grade: 'V6',
+    instagramUrl: '',
     bio: '',
     gym: '',
     location: '',

@@ -19,7 +19,8 @@
     "test": "vitest run",
     "format:check": "prettier --check .",
     "demo:seed": "tsx scripts/seed-demo.ts",
-    "demo:boards": "tsx scripts/seed-boards.ts"
+    "demo:boards": "tsx scripts/seed-boards.ts",
+    "demo:climbs": "tsx scripts/seed-climbs.ts"
   },
   "dependencies": {
     "dotenv": "18.0.9",

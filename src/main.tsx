@@ -1,6 +1,7 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
 import {BrowserRouter, Link, Route, Routes} from 'react-router-dom';
+import {ClimbingRecords} from '@/pages/ClimbingRecords';
 import {Admin} from '@/pages/Admin';
 import {Auth} from '@/pages/Auth';
 import {HallOfFame} from '@/pages/HallOfFame';
@@ -16,6 +17,7 @@ import {Protected} from '@/components/Protected';
 import {EmptyState} from '@/components/ui';
 import {SessionProvider} from '@/components/SessionProvider';
 import './styles.css';
+import './styles/climbing.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -100,6 +102,14 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <Protected access="member">
                   <MyOrders />
+                </Protected>
+              }
+            />
+            <Route
+              path="climbs"
+              element={
+                <Protected access="member">
+                  <ClimbingRecords />
                 </Protected>
               }
             />
