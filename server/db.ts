@@ -25,7 +25,7 @@ export function openDatabase(path: string) {
       location TEXT NOT NULL DEFAULT '',
       gym TEXT NOT NULL DEFAULT '',
       grade TEXT NOT NULL DEFAULT '입문',
-      role TEXT NOT NULL CHECK(role IN ('member', 'admin')),
+      role TEXT NOT NULL CHECK(role IN ('member', 'staff', 'admin')),
       status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'rejected', 'suspended')),
       createdAt TEXT NOT NULL
     );

@@ -1,3 +1,4 @@
+import {ROLE_LABELS} from '@/consts/roles';
 import {Check, KeyRound, ShieldCheck} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {AdminMarket} from '@/components/AdminMarket';
@@ -120,6 +121,7 @@ function AdminMembers() {
                   권한
                   <select name="role" defaultValue={member.role}>
                     <option value="member">회원</option>
+                    <option value="staff">운영진</option>
                     <option value="admin">관리자</option>
                   </select>
                 </label>
@@ -151,13 +153,14 @@ function AdminMembers() {
 }
 
 export function Admin() {
+  const {user} = useSession();
   const [tab, setTab] = useState<'members' | 'activity' | 'achievements' | 'market'>('members');
   return (
     <div className="page-shell">
       <PageHeading title="크루 관리">
         <span className="count-pill">
           <ShieldCheck size={17} />
-          관리자
+          {user ? ROLE_LABELS[user.role] : '운영진'}
         </span>
       </PageHeading>
       <div className="tabs admin-tabs">

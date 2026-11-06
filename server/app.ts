@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '../src/consts/roles';
 import {randomBytes, randomUUID} from 'node:crypto';
 import {PostgresDatabase, type Database} from './database';
 import {DatabaseRateStore} from './rate-store';
@@ -135,7 +136,7 @@ export function createApp({
   }
   async function requireAdmin(req: express.Request) {
     const user = await requireMember(req);
-    if (user.role !== 'admin') throw new ApiError(403, '관리자 권한이 필요합니다.');
+    if (!hasManagementAccess(user.role)) throw new ApiError(403, '운영진 또는 관리자 권한이 필요합니다.');
     return user;
   }
   async function audit(actorId: string, targetId: string, action: string, details: object) {
@@ -253,7 +254,7 @@ export function createApp({
     const input = z
       .object({
         status: z.enum(['pending', 'approved', 'rejected', 'suspended']),
-        role: z.enum(['member', 'admin']),
+        role: z.enum(['member', 'staff', 'admin']),
         reason: z.string().trim().max(200),
       })
       .parse(req.body);

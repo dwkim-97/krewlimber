@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '@/consts/roles';
 import {
   ArrowLeft,
   ArrowUpRight,
@@ -74,7 +75,7 @@ export function Market() {
           <Link className="text-link" to="/me/orders">
             내 교환 내역 <ArrowUpRight size={17} />
           </Link>
-          {user?.role === 'admin' && user.status === 'approved' && (
+          {hasManagementAccess(user?.role) && user?.status === 'approved' && (
             <Link className="button button-dark button-small" to="/market/new">
               <Plus size={17} /> 상품 등록
             </Link>
@@ -266,7 +267,7 @@ function ProductDetailContent({id}: {id: string}) {
         <Link to="/market" className="text-link market-back">
           <ArrowLeft size={17} /> 마켓으로
         </Link>
-        {user?.role === 'admin' && user.status === 'approved' && (
+        {hasManagementAccess(user?.role) && user?.status === 'approved' && (
           <Link className="button button-outline button-small" to={`/market/${id}/edit`}>
             <Pencil size={16} /> 상품 수정
           </Link>

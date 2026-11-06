@@ -15,7 +15,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
   const signup = mode === 'signup';
   const recovery = mode === 'recover';
   if (loading) return <Loading />;
-  if (user && !recovery) return <Navigate to="/me" replace />;
+  if (user && !recovery) return <Navigate to={user.status === 'approved' ? '/' : '/me'} replace />;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -28,11 +28,10 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
         ? {username: form.get('username'), token: form.get('token'), newPassword: password}
         : {username: form.get('username'), password, ...(signup ? {nickname: form.get('nickname')} : {})};
       await api(`/auth/${recovery ? 'recover' : mode}`, {method: 'POST', body: JSON.stringify(payload)});
-      await refresh();
+      const nextUser = await refresh();
       if (recovery) setDone(true);
       else {
-        const from = (location.state as {from: string} | null)?.from;
-        navigate(signup ? '/me' : from?.startsWith('/') ? from : '/me', {replace: true});
+        navigate(signup || nextUser?.status !== 'approved' ? '/me' : '/', {replace: true});
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : '다시 시도해주세요.');

@@ -10,6 +10,7 @@ it('runs signup, session and profile APIs against PostgreSQL', async () => {
   await engine.exec('CREATE ROLE anon; CREATE ROLE authenticated;');
   await engine.exec(readFileSync('supabase/migrations/202611060001_initial.sql', 'utf8'));
   await engine.exec(readFileSync('supabase/migrations/202611060002_rate_limits.sql', 'utf8'));
+  await engine.exec(readFileSync('supabase/migrations/202611060003_staff_role.sql', 'utf8'));
   const db = new PostgresDatabase({
     query: async (sql, values) => {
       const r = await engine.query(sql, values);

@@ -1,3 +1,4 @@
+import {ROLE_LABELS} from '@/consts/roles';
 import {Check, Clock3, KeyRound, LogOut, ShieldCheck} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
@@ -79,7 +80,7 @@ export function Me() {
             {approved ? <ShieldCheck size={14} /> : <Clock3 size={14} />}
             {STATUS_LABELS[user.status]}
           </span>
-          {user.role === 'admin' && <span className="admin-label">관리자</span>}
+          <span className="admin-label">{ROLE_LABELS[user.role]}</span>
           <div className="summary-grade">
             <span>주요 난이도</span>
             <strong>{user.grade}</strong>

@@ -1,4 +1,4 @@
-export type Role = 'member' | 'admin';
+export type Role = 'member' | 'staff' | 'admin';
 export type MemberStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type Grade = '입문' | 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8+';
 export type HonorKind = 'send' | 'growth' | 'crew';

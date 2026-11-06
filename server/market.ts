@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '../src/consts/roles';
 import {randomUUID} from 'node:crypto';
 import type {Database} from './database';
 import type {MarketOrder, Product, Wallet} from '../src/types/boards';
@@ -112,8 +113,9 @@ export async function changeOrder(
   audit: BoardAuthorization['audit']
 ): Promise<MarketOrder> {
   const order = await getOrder(db, id);
-  if (actor.role !== 'admin' && actor.id !== order.userId) throw new ApiError(404, '교환 신청을 찾을 수 없습니다.');
-  if (status === 'completed' && actor.role !== 'admin') throw new ApiError(403, '관리자 권한이 필요합니다.');
+  if (!hasManagementAccess(actor.role) && actor.id !== order.userId)
+    throw new ApiError(404, '교환 신청을 찾을 수 없습니다.');
+  if (status === 'completed' && !hasManagementAccess(actor.role)) throw new ApiError(403, '관리자 권한이 필요합니다.');
   if (order.status === status) return order;
   if (order.status !== 'pending') throw new ApiError(409, '처리가 끝난 신청은 변경할 수 없습니다.');
   const now = new Date().toISOString();

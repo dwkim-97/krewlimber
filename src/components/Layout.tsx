@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '@/consts/roles';
 import {ArrowUpRight, Menu, X} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useLocation} from 'react-router-dom';
@@ -45,7 +46,7 @@ export function Layout() {
                 <NavLink to="/market">포인트 마켓</NavLink>
                 <NavLink to="/members">멤버</NavLink>
                 <NavLink to="/hall-of-fame">명예의 전당</NavLink>
-                {user.role === 'admin' && <NavLink to="/admin">크루 관리</NavLink>}
+                {hasManagementAccess(user.role) && <NavLink to="/admin">크루 관리</NavLink>}
                 <span className="nav-divider" />
               </>
             )}
