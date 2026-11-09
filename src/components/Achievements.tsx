@@ -1,3 +1,4 @@
+import {conditionLabel} from '@/consts/achievement-conditions';
 import {Award, Check, LockKeyhole, Search, Sparkles} from 'lucide-react';
 import {useState} from 'react';
 import {InfoButton} from '@/components/InfoButton';
@@ -95,7 +96,12 @@ export function Achievements() {
                 </button>
                 <InfoButton title={item.name}>
                   <p className="info-condition">{item.description}</p>
-                  <p>전체 분기의 누적 기록으로 계산합니다. 달성한 업적은 대표로 선택할 수 있습니다.</p>
+                  <p>
+                    {item.condition
+                      ? '이 지점의 누적 완등 기록으로 자동 계산합니다.'
+                      : '전체 분기의 누적 활동 기록으로 계산합니다.'}{' '}
+                    달성한 업적은 대표로 선택할 수 있습니다.
+                  </p>
                 </InfoButton>
               </div>
             ))
@@ -117,10 +123,18 @@ export function Achievements() {
                 <h3>{selected.name}</h3>
                 <InfoButton title={selected.name}>
                   <p className="info-condition">{selected.description}</p>
-                  <p>전체 분기의 누적 기록으로 계산합니다. 달성한 업적은 대표로 선택할 수 있습니다.</p>
+                  <p>
+                    {selected.condition
+                      ? '이 지점의 누적 완등 기록으로 자동 계산합니다.'
+                      : '전체 분기의 누적 활동 기록으로 계산합니다.'}{' '}
+                    달성한 업적은 대표로 선택할 수 있습니다.
+                  </p>
                 </InfoButton>
               </div>
               <p>{selected.description}</p>
+              {selected.condition && (
+                <p className="achievement-rule-caption">{conditionLabel(selected.condition, selected.target)}</p>
+              )}
               <div className="detail-progress">
                 <strong>
                   {Math.min(selected.progress, selected.target)}

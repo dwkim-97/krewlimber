@@ -24,6 +24,8 @@ import {transaction} from './database';
 import {ApiError} from './errors';
 import {currentQuarter, decorateMembers} from './progression';
 import {registerProgressionRoutes} from './progression-routes';
+import {registerGymComments} from './gym-comments';
+import {registerClimbingRoutes} from './climbing-routes';
 import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
 import type {ImageStorage} from './image-storage';
@@ -72,7 +74,15 @@ export function createApp({
   app.disable('x-powered-by');
   app.use(
     helmet({
-      contentSecurityPolicy: secureCookies ? {directives: {imgSrc: ["'self'", 'data:', 'blob:', 'https:']}} : false,
+      contentSecurityPolicy: secureCookies
+        ? {
+            directives: {
+              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+              scriptSrc: ["'self'", 'https://dapi.kakao.com', 'https://t1.daumcdn.net', 'https://t1.kakaocdn.net'],
+              connectSrc: ["'self'", 'https://dapi.kakao.com', 'https://*.daumcdn.net'],
+            },
+          }
+        : false,
       strictTransportSecurity: secureCookies ? undefined : false,
     })
   );
@@ -231,11 +241,13 @@ export function createApp({
     await requireMember(req);
     const members = (await db
       .prepare(
-        "SELECT id,fullName,nickname,bio,location,gym,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
+        "SELECT u.id,u.fullName,u.nickname,u.bio,u.location,u.gym,u.grade,u.level,u.role,u.createdAt,COALESCE((SELECT SUM(l.amount) FROM pointLedger l WHERE l.userId=u.id),0) AS points FROM users u WHERE u.status='approved' ORDER BY u.nickname COLLATE NOCASE,u.id"
       )
-      .all()) as unknown as MemberProfile[];
+      .all()) as unknown as (MemberProfile & {role: User['role']; points: number})[];
     res.json({members: await decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerGymComments(app, db, {member: requireMember, admin: requireAdmin, audit});
+  registerClimbingRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketImageRoutes(app, uploadsDir, {member: requireMember, admin: requireAdmin, audit}, imageStorage);
@@ -258,6 +270,10 @@ export function createApp({
       .object({
         status: z.enum(['pending', 'approved', 'rejected', 'suspended']),
         role: z.enum(['member', 'staff', 'admin']),
+        level: z
+          .union([z.number(), z.string().regex(/^\d+$/).transform(Number)])
+          .pipe(z.number().int().min(0).max(11))
+          .optional(),
         reason: z.string().trim().max(200),
       })
       .parse(req.body);
@@ -279,11 +295,13 @@ export function createApp({
           .get()) as {n: number};
         if (count.n <= 1) throw new ApiError(409, '최소 한 명의 관리자가 필요합니다.');
       }
-      await db.prepare('UPDATE users SET role = ?, status = ? WHERE id = ?').run(input.role, input.status, target.id);
+      await db
+        .prepare('UPDATE users SET role = ?, status = ?, level = ? WHERE id = ?')
+        .run(input.role, input.status, input.level ?? target.level ?? 0, target.id);
       if (input.status !== 'approved' || input.role !== target.role)
         await db.prepare('DELETE FROM sessions WHERE userId = ?').run(target.id);
       await audit(actor.id, target.id, 'membership.update', {
-        before: {role: target.role, status: target.status},
+        before: {role: target.role, status: target.status, level: target.level},
         after: input,
       });
     });

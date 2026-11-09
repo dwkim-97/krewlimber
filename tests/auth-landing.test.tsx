@@ -6,6 +6,7 @@ import {Auth} from '../src/pages/Auth';
 import {SessionContext} from '../src/stores/session';
 import type {User} from '../src/types';
 const member: User = {
+  level: 0,
   fullName: '홍길동',
   id: 'member',
   username: 'crew.member',

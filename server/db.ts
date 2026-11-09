@@ -1,13 +1,17 @@
+import {gymIdentity} from '../src/consts/gym-identity';
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
+import {achievementConditionsSchema} from './achievement-conditions';
+import {gymCommentsSchema} from './gym-comments';
+import {climbingSchema} from './climbing-schema';
 import {DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
   const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
-  if (version > 5) {
+  if (version > 6) {
     db.close();
     throw new Error('Unsupported database version.');
   }
@@ -145,6 +149,79 @@ export function openDatabase(path: string) {
         'ALTER TABLE pointLedger ADD COLUMN requestId TEXT; CREATE UNIQUE INDEX pointLedger_request ON pointLedger(actorId,requestId) WHERE requestId IS NOT NULL; PRAGMA user_version=5;'
       );
     });
+  if (
+    !db
+      .prepare('PRAGMA table_info(users)')
+      .all()
+      .some(c => c.name === 'level')
+  )
+    db.exec('ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 0 CHECK(level>=0 AND level<=11);');
+  db.exec(climbingSchema);
+  if (
+    !db
+      .prepare('PRAGMA table_info(gyms)')
+      .all()
+      .some(c => c.name === 'placeId')
+  )
+    db.exec('ALTER TABLE gyms ADD COLUMN placeId TEXT;');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS gyms_place ON gyms(placeId) WHERE placeId IS NOT NULL;');
+  if (
+    !db
+      .prepare('PRAGMA table_info(gymGrades)')
+      .all()
+      .some(c => c.name === 'sortOrder')
+  )
+    db.exec('ALTER TABLE gymGrades ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;');
+  for (const column of ['brandName', 'branchName']) {
+    if (
+      !db
+        .prepare('PRAGMA table_info(gyms)')
+        .all()
+        .some(c => c.name === column)
+    )
+      db.exec(`ALTER TABLE gyms ADD COLUMN ${column} TEXT NOT NULL DEFAULT '';`);
+  }
+  for (const gym of db.prepare("SELECT id,name FROM gyms WHERE brandName=''").all()) {
+    const identity = gymIdentity({name: String(gym.name)});
+    db.prepare('UPDATE gyms SET brandName=?,branchName=? WHERE id=?').run(
+      identity.brandName,
+      identity.branchName,
+      String(gym.id)
+    );
+  }
+  db.exec(gymCommentsSchema);
+  db.exec(achievementConditionsSchema);
+  if (version < 6) {
+    const rows = db.prepare('SELECT id,gymId,sortOrder FROM gymGrades').all();
+    const max = new Map<string, number>();
+    for (const r of rows) max.set(String(r.gymId), Math.max(max.get(String(r.gymId)) ?? 0, Number(r.sortOrder)));
+    transaction(db, () => {
+      for (const r of rows)
+        db.prepare('UPDATE gymGrades SET sortOrder=? WHERE id=?').run(
+          max.get(String(r.gymId))! - Number(r.sortOrder),
+          String(r.id)
+        );
+      const previousConditions = db.prepare('SELECT * FROM achievementConditions').all();
+      db.exec('DROP TABLE achievementConditions;');
+      db.exec(achievementConditionsSchema);
+      for (const c of previousConditions) {
+        const grade = db.prepare('SELECT sortOrder FROM gymGrades WHERE id=?').get(String(c.gradeId));
+        db.prepare(
+          'INSERT INTO achievementConditions(achievementId,gymId,gradeId,operator,difficultyRank) VALUES(?,?,?,?,?)'
+        ).run(
+          String(c.achievementId),
+          String(c.gymId),
+          String(c.gradeId),
+          c.operator === 'lte' ? 'gte' : String(c.operator),
+          Number(grade!.sortOrder) + 1
+        );
+      }
+      db.exec('PRAGMA user_version=6;');
+    });
+  }
+  db.exec(
+    "INSERT OR IGNORE INTO gyms(id,name,address,createdAt) VALUES('gym-climbingpark-gangnam','클라이밍파크 강남점','','2026-11-06'),('gym-theclimb-gangnam','더클라임 강남점','','2026-11-06'); INSERT OR IGNORE INTO gymGrades(id,gymId,name,color,createdAt) VALUES('park-gray','gym-climbingpark-gangnam','회색','#888888','2026-11-06'),('climb-purple','gym-theclimb-gangnam','보라','#8654ad','2026-11-06');"
+  );
   return db;
 }
 

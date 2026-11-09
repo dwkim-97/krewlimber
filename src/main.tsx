@@ -1,9 +1,12 @@
 import {StrictMode} from 'react';
 import {createRoot} from 'react-dom/client';
-import {BrowserRouter, Link, Route, Routes} from 'react-router-dom';
+import {BrowserRouter, Link, Route, Routes, Navigate} from 'react-router-dom';
 import {Admin} from '@/pages/Admin';
 import {Auth} from '@/pages/Auth';
-import {HallOfFame} from '@/pages/HallOfFame';
+import {AchievementHub} from '@/pages/AchievementHub';
+import {Gyms} from '@/pages/Gyms';
+import {ClimbingRedirect} from '@/pages/Climbing';
+import {Guide} from '@/pages/Guide';
 import {Home} from '@/pages/Home';
 import {Me} from '@/pages/Me';
 import {Members} from '@/pages/Members';
@@ -16,6 +19,7 @@ import {Protected} from '@/components/Protected';
 import {EmptyState} from '@/components/ui';
 import {SessionProvider} from '@/components/SessionProvider';
 import './styles.css';
+import './styles/polish.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,6 +32,30 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <Protected access="member">
                   <Home />
+                </Protected>
+              }
+            />
+            <Route
+              path="gyms"
+              element={
+                <Protected access="member">
+                  <Gyms />
+                </Protected>
+              }
+            />
+            <Route
+              path="climbing"
+              element={
+                <Protected access="member">
+                  <ClimbingRedirect />
+                </Protected>
+              }
+            />
+            <Route
+              path="guide"
+              element={
+                <Protected access="member">
+                  <Guide />
                 </Protected>
               }
             />
@@ -106,11 +134,12 @@ createRoot(document.getElementById('root')!).render(
             <Route path="login" element={<Auth key="login" mode="login" />} />
             <Route path="signup" element={<Auth key="signup" mode="signup" />} />
             <Route path="recover" element={<Auth key="recover" mode="recover" />} />
+            <Route path="hall-of-fame" element={<Navigate replace to="/achievements?tab=hall" />} />
             <Route
-              path="hall-of-fame"
+              path="achievements"
               element={
                 <Protected access="member">
-                  <HallOfFame />
+                  <AchievementHub />
                 </Protected>
               }
             />

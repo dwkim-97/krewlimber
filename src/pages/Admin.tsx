@@ -1,5 +1,7 @@
+import {LEVELS, levelLabel} from '@/consts/levels';
 import {ROLE_LABELS} from '@/consts/roles';
 import {Check, KeyRound, ShieldCheck} from 'lucide-react';
+import {useSearchParams} from 'react-router-dom';
 import {useState, type FormEvent} from 'react';
 import {AdminMarket} from '@/components/AdminMarket';
 import {AdminProgression} from '@/components/AdminProgression';
@@ -127,6 +129,16 @@ function AdminMembers() {
                     <option value="admin">관리자</option>
                   </select>
                 </label>
+                <label>
+                  레벨
+                  <select name="level" defaultValue={member.level ?? 0}>
+                    {LEVELS.map(l => (
+                      <option key={l.value} value={l.value}>
+                        {levelLabel(l.value)}
+                      </option>
+                    ))}
+                  </select>
+                </label>
                 <label className="reason-field">
                   처리 사유
                   <input name="reason" maxLength={200} />
@@ -156,10 +168,14 @@ function AdminMembers() {
 
 export function Admin() {
   const {user} = useSession();
-  const [tab, setTab] = useState<'members' | 'activity' | 'achievements' | 'market'>('members');
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab');
+  const tab =
+    requested === 'activity' || requested === 'achievements' || requested === 'market' ? requested : 'members';
+  const setTab = (value: string) => setParams({tab: value});
   return (
     <div className="page-shell">
-      <PageHeading title="크루 관리">
+      <PageHeading title="관리">
         <span className="count-pill">
           <ShieldCheck size={17} />
           {user ? ROLE_LABELS[user.role] : '운영진'}

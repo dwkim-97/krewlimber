@@ -3,6 +3,8 @@ import {dirname, resolve} from 'node:path';
 import express from 'express';
 import {config} from 'dotenv';
 import {createApp} from './app';
+import {openDatabase} from './db';
+import {createAccount} from './auth';
 import {openPostgresDatabase} from './database';
 import {supabaseImageStorage} from './image-storage';
 import {environmentFile} from './environment';
@@ -19,7 +21,20 @@ if (!origin || (production && !origin.startsWith('https://')))
 if (new URL(origin).origin !== origin)
   throw new Error('APP_ORIGIN must be an origin without a trailing slash or path.');
 const databasePath = process.env.DATABASE_PATH ?? './data/krewlimber.sqlite';
-const db = openPostgresDatabase();
+const localPreview = process.env.LOCAL_PREVIEW === '1';
+if (localPreview && production) throw new Error('Local preview is unavailable in production.');
+const db = localPreview ? openDatabase('./data/local-preview.sqlite') : openPostgresDatabase();
+if (localPreview && !(await db.prepare('SELECT id FROM users WHERE username=?').get('test.admin'))) {
+  await createAccount(db, {
+    username: 'test.admin',
+    nickname: '로컬 테스트',
+    fullName: '테스트',
+    password: 'Krew-Test-2026!',
+    role: 'admin',
+    status: 'approved',
+  });
+}
+
 const uploadsDir = resolve(
   process.env.UPLOADS_DIR ??
     (databasePath === ':memory:' ? './data/uploads' : resolve(dirname(databasePath), 'uploads'))
@@ -30,7 +45,7 @@ const app = createApp({
   secureCookies: production,
   trustProxy,
   uploadsDir,
-  imageStorage: process.env.PGHOST ? supabaseImageStorage() : undefined,
+  imageStorage: !localPreview && process.env.PGHOST ? supabaseImageStorage() : undefined,
 });
 
 if (production) {

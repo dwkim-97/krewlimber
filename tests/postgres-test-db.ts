@@ -1,13 +1,13 @@
-import {readFileSync} from 'node:fs';
+import {readFileSync, readdirSync} from 'node:fs';
 import {PGlite} from '@electric-sql/pglite';
 import {PostgresDatabase} from '../server/database';
 export async function openPostgresTestDatabase() {
   const engine = new PGlite();
   await engine.exec('CREATE ROLE anon; CREATE ROLE authenticated;');
-  await engine.exec(readFileSync('supabase/migrations/202611060001_initial.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060002_rate_limits.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060003_staff_role.sql', 'utf8'));
-  await engine.exec(readFileSync('supabase/migrations/202611060004_member_names.sql', 'utf8'));
+  for (const file of readdirSync('supabase/migrations')
+    .filter(f => /^\d+.*\.sql$/.test(f))
+    .sort())
+    await engine.exec(readFileSync(`supabase/migrations/${file}`, 'utf8'));
   const query = async (sql: string, values?: unknown[]) => {
     if (!values?.length && sql.includes(';')) {
       await engine.exec(sql);

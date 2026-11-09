@@ -8,7 +8,8 @@ export interface UserRecord extends User {
 }
 const sessionLifetime = 7 * 24 * 60 * 60 * 1000;
 const cookieName = 'krew_session';
-export const userColumns = 'id, username, fullName, nickname, bio, location, gym, grade, role, status, createdAt';
+export const userColumns =
+  'id, username, fullName, nickname, bio, location, gym, grade, level, role, status, createdAt';
 export const dummyHash = `scrypt$32768$8$3$${'0'.repeat(32)}$${'0'.repeat(128)}`;
 
 function derive(password: string, salt: string): Promise<Buffer> {
