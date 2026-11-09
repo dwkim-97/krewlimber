@@ -1,5 +1,6 @@
 import {ArrowUpRight, Award, Mountain, UserRound, Users} from 'lucide-react';
 import {Link} from 'react-router-dom';
+import {GuideHighlights} from '@/pages/Guide';
 import {TitleList} from '@/components/TitleList';
 import {ErrorNotice, Loading, TextLink} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
@@ -36,7 +37,15 @@ export function Home() {
           height={1080}
         />
       </section>
+      <GuideHighlights />
       <nav className="dashboard-links" aria-label="크루 바로가기">
+        <Link to="/me?tab=climbing">
+          <span className="dashboard-icon">
+            <Mountain size={24} />
+          </span>
+          <h2>등반 기록</h2>
+          <ArrowUpRight size={22} />
+        </Link>
         <Link to="/members">
           <span className="dashboard-icon">
             <Users size={24} />
@@ -44,7 +53,7 @@ export function Home() {
           <h2>멤버</h2>
           <ArrowUpRight size={22} />
         </Link>
-        <Link to="/hall-of-fame">
+        <Link to="/achievements?tab=hall">
           <span className="dashboard-icon">
             <Award size={24} />
           </span>
@@ -62,7 +71,7 @@ export function Home() {
       <section className="dashboard-records">
         <div className="section-heading">
           <h2>{titles.data ? quarterLabel(titles.data.quarter) : '이번 분기'} 타이틀</h2>
-          <TextLink to="/hall-of-fame">전체 보기</TextLink>
+          <TextLink to="/achievements?tab=hall">전체 보기</TextLink>
         </div>
         {titles.loading ? (
           <Loading />

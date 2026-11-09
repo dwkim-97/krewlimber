@@ -72,7 +72,7 @@ describe('notices', () => {
     expect((await admin.delete(`/api/admin/notices/${id}`).set('Origin', origin)).status).toBe(200);
     expect((await member.get(`/api/notices/${id}`)).status).toBe(404);
     expect((await admin.delete(`/api/admin/notices/${id}`).set('Origin', origin)).status).toBe(404);
-    expect(db.prepare('SELECT action FROM auditLog ORDER BY id').all()).toEqual([
+    expect(await db.prepare('SELECT action FROM auditLog ORDER BY id').all()).toEqual([
       {action: 'notice.create'},
       {action: 'notice.update'},
       {action: 'notice.delete'},
@@ -98,13 +98,21 @@ describe('notices', () => {
 
   it('sorts pinned first, uses deterministic newest order and clamps page boundaries', async () => {
     const admin = await login('owner', 'admin', 'approved');
-    const actor = db.prepare('SELECT id FROM users').get() as {id: string};
+    const actor = (await db.prepare('SELECT id FROM users').get()) as {id: string};
     const insert = db.prepare(
       'INSERT INTO notices (id,title,body,pinned,authorId,createdAt,updatedAt) VALUES (?,?,?,?,?,?,?)'
     );
     for (let i = 0; i < 23; i++) {
       const id = String(i).padStart(2, '0');
-      insert.run(id, `공지 ${id}`, '본문', i === 0 ? 1 : 0, actor.id, '2026-11-05T00:00:00Z', '2026-11-05T00:00:00Z');
+      await insert.run(
+        id,
+        `공지 ${id}`,
+        '본문',
+        i === 0 ? 1 : 0,
+        actor.id,
+        '2026-11-05T00:00:00Z',
+        '2026-11-05T00:00:00Z'
+      );
     }
     const first = await admin.get('/api/notices');
     expect(first.body).toMatchObject({total: 23, page: 1, pageSize: 10});
@@ -168,6 +176,6 @@ describe('notices', () => {
       ).status
     ).toBe(500);
     expect((await admin.delete(`/api/admin/notices/${id}`).set('Origin', origin)).status).toBe(500);
-    expect(db.prepare('SELECT title FROM notices').all()).toEqual([{title: input.title}]);
+    expect(await db.prepare('SELECT title FROM notices').all()).toEqual([{title: input.title}]);
   });
 });

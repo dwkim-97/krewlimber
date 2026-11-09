@@ -1,23 +1,19 @@
 import {randomUUID} from 'node:crypto';
-import type {DatabaseSync} from 'node:sqlite';
+import type {Database} from './database';
 import type {User} from '../src/types';
 import {userColumns} from './auth';
-import {transaction} from './db';
+import {transaction} from './database';
 import {adjustPoints, changeOrder, createMarketOrder, getProduct} from './market';
 
-export function seedBoardDemo(db: DatabaseSync) {
-  const admin = db
+export async function seedBoardDemo(db: Database) {
+  const admin = (await db
     .prepare(`SELECT ${userColumns} FROM users WHERE username='test.admin' AND role='admin' AND status='approved'`)
-    .get() as unknown as User | undefined;
+    .get()) as unknown as User | undefined;
   if (!admin) throw new Error('Create the existing preview test accounts first.');
-  const audit = (actorId: string, targetId: string, action: string, details: object) => {
-    db.prepare('INSERT INTO auditLog(actorId,targetId,action,details,createdAt) VALUES(?,?,?,?,?)').run(
-      actorId,
-      targetId,
-      action,
-      JSON.stringify(details),
-      new Date().toISOString()
-    );
+  const audit = async (actorId: string, targetId: string, action: string, details: object) => {
+    await db
+      .prepare('INSERT INTO auditLog(actorId,targetId,action,details,createdAt) VALUES(?,?,?,?,?)')
+      .run(actorId, targetId, action, JSON.stringify(details), new Date().toISOString());
   };
   const products = [
     [
@@ -77,13 +73,15 @@ export function seedBoardDemo(db: DatabaseSync) {
     ],
     ['11111111-1111-4111-8111-111111111108', '이전 시즌 굿즈', '판매 중지된 테스트 상품입니다.', 'other', 100, 0, null],
   ] as const;
-  transaction(db, () => {
-    products.forEach((p, index) => {
+  await transaction(db, async () => {
+    for (const [index, p] of products.entries()) {
       const time = new Date(Date.now() - index * 60000).toISOString();
-      db.prepare(
-        'INSERT OR IGNORE INTO marketProducts(id,name,description,category,points,stock,imageUrl,active,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?,?,?,?)'
-      ).run(...p, index === 7 ? 0 : 1, time, time);
-    });
+      await db
+        .prepare(
+          'INSERT OR IGNORE INTO marketProducts(id,name,description,category,points,stock,imageUrl,active,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?,?,?,?)'
+        )
+        .run(...p, index === 7 ? 0 : 1, time, time);
+    }
     const topics = [
       '크루라이머 이용 안내',
       '포인트 마켓 오픈 안내',
@@ -100,28 +98,34 @@ export function seedBoardDemo(db: DatabaseSync) {
       '처음 도전하는 색상도 함께',
       '다음 모임에서 만나요',
     ];
-    topics.forEach((title, index) => {
+    for (const [index, title] of topics.entries()) {
       const id = `22222222-2222-4222-8222-${String(index + 1).padStart(12, '0')}`;
       const time = new Date(Date.now() - index * 86400000).toISOString();
-      db.prepare(
-        'INSERT OR IGNORE INTO notices(id,title,body,pinned,authorId,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?)'
-      ).run(
-        id,
-        title,
-        `${title}\n\n크루가 함께 확인할 수 있도록 준비한 테스트 공지입니다.\n\n포인트 상품은 신청 시 포인트가 차감되며, 처리 전 취소하면 돌려받습니다. 모임과 수령 관련 내용은 운영진에게 문의해주세요.`,
-        index < 2 ? 1 : 0,
-        admin.id,
-        time,
-        time
-      );
-    });
-    const users = db
+      await db
+        .prepare(
+          'INSERT OR IGNORE INTO notices(id,title,body,pinned,authorId,createdAt,updatedAt) VALUES(?,?,?,?,?,?,?)'
+        )
+        .run(
+          id,
+          title,
+          `${title}\n\n크루가 함께 확인할 수 있도록 준비한 테스트 공지입니다.\n\n포인트 상품은 신청 시 포인트가 차감되며, 처리 전 취소하면 돌려받습니다. 모임과 수령 관련 내용은 운영진에게 문의해주세요.`,
+          index < 2 ? 1 : 0,
+          admin.id,
+          time,
+          time
+        );
+    }
+    const users = (await db
       .prepare(`SELECT ${userColumns} FROM users WHERE username LIKE 'test.%' AND status='approved'`)
-      .all() as unknown as User[];
+      .all()) as unknown as User[];
     for (const user of users) {
       const reason = '화면 확인용 초기 포인트';
-      if (!db.prepare("SELECT id FROM pointLedger WHERE userId=? AND kind='grant' AND reason=?").get(user.id, reason))
-        adjustPoints(
+      if (
+        !(await db
+          .prepare("SELECT id FROM pointLedger WHERE userId=? AND kind='grant' AND reason=?")
+          .get(user.id, reason))
+      )
+        await adjustPoints(
           db,
           admin.id,
           user.id,
@@ -136,28 +140,36 @@ export function seedBoardDemo(db: DatabaseSync) {
           null
         );
     }
-    if (!db.prepare('SELECT id FROM marketOrders WHERE userId=?').get(admin.id)) {
-      createMarketOrder(db, admin, products[0][0], 1, randomUUID(), getProduct(db, products[0][0]).revision, audit);
-      const done = createMarketOrder(
+    if (!(await db.prepare('SELECT id FROM marketOrders WHERE userId=?').get(admin.id))) {
+      await createMarketOrder(
+        db,
+        admin,
+        products[0][0],
+        1,
+        randomUUID(),
+        (await getProduct(db, products[0][0])).revision,
+        audit
+      );
+      const done = await createMarketOrder(
         db,
         admin,
         products[3][0],
         1,
         randomUUID(),
-        getProduct(db, products[3][0]).revision,
+        (await getProduct(db, products[3][0])).revision,
         audit
       );
-      changeOrder(db, admin, done.order.id, 'completed', audit);
-      const cancelled = createMarketOrder(
+      await changeOrder(db, admin, done.order.id, 'completed', audit);
+      const cancelled = await createMarketOrder(
         db,
         admin,
         products[2][0],
         1,
         randomUUID(),
-        getProduct(db, products[2][0]).revision,
+        (await getProduct(db, products[2][0])).revision,
         audit
       );
-      changeOrder(db, admin, cancelled.order.id, 'cancelled', audit);
+      await changeOrder(db, admin, cancelled.order.id, 'cancelled', audit);
     }
   });
   return {notices: 14, products: products.length};

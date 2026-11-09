@@ -7,7 +7,7 @@ if (!path) throw new Error('DEMO_DATABASE_PATH is required.');
 assertDemoDatabase(path, process.env.NODE_ENV === 'production' ? 'production' : 'development');
 const db = openDatabase(path);
 try {
-  console.log(seedBoardDemo(db));
+  console.log(await seedBoardDemo(db));
 } finally {
   db.close();
 }

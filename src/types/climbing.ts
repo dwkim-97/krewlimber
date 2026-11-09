@@ -1,54 +1,37 @@
+export interface GymGrade {
+  id: string;
+  gymId: string;
+  name: string;
+  color: string;
+}
 export interface Gym {
-  aliases: string[];
+  revision?: string;
+  brandName?: string;
+  branchName?: string;
+  placeId: string | null;
   id: string;
   name: string;
   address: string;
-  region: string;
-  franchiseId: string;
-  franchiseName: string;
-  url: string;
+  latitude: number | null;
+  longitude: number | null;
+  grades: GymGrade[];
 }
-export interface GymCatalog {
-  verifiedAt: string;
-  exhaustive: boolean;
-  coverageNote: string;
-  gyms: Gym[];
-}
-export interface ClimbColor {
-  key: string;
-  name: string;
-  hex: string;
-}
-export interface ColorCount extends ClimbColor {
-  count: number;
-}
-export interface ClimbInput {
-  date: string;
-  gymId: string;
-  colors: ColorCount[];
-}
-export interface ClimbRecord extends ClimbInput {
+export interface Visit {
   id: string;
-  gym: Gym;
-  createdAt: string;
-  updatedAt: string;
+  gymId: string;
+  gymName: string;
+  visitedOn: string;
+  note: string;
+  requestId: string;
+  sends: (GymGrade & {gradeId: string; count: number})[];
 }
-export interface BranchSummary {
-  gym: Gym;
-  visits: number;
-  totalSends: number;
-  colors: ColorCount[];
-}
-export interface FranchiseSummary {
-  franchiseId: string;
-  franchiseName: string;
-  visits: number;
-  totalSends: number;
-  colors: ColorCount[];
-  branches: BranchSummary[];
-}
-export interface ClimbingSummary {
-  visits: number;
-  totalSends: number;
-  groups: FranchiseSummary[];
+export interface LevelSummaryData {
+  level: number;
+  inputs: {
+    visits: number;
+    sends: number;
+    gyms: number;
+    earnedAchievements: {id: string; name: string}[];
+    byGrade: {gymName: string; gradeId: string; name: string; color: string; count: number}[];
+  };
 }

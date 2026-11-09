@@ -1,4 +1,7 @@
+import {LEVELS, levelLabel} from '@/consts/levels';
+import {ROLE_LABELS} from '@/consts/roles';
 import {Check, KeyRound, ShieldCheck} from 'lucide-react';
+import {useSearchParams} from 'react-router-dom';
 import {useState, type FormEvent} from 'react';
 import {AdminMarket} from '@/components/AdminMarket';
 import {AdminProgression} from '@/components/AdminProgression';
@@ -101,7 +104,9 @@ function AdminMembers() {
                     {member.nickname}
                     {member.id === user?.id && <small>나</small>}
                   </h3>
-                  <span>@{member.username}</span>
+                  <span>
+                    {member.fullName ? `${member.fullName} · ` : ''}@{member.username}
+                  </span>
                 </div>
                 <span className={`status-tag status-${member.status}`}>{STATUS_LABELS[member.status]}</span>
               </div>
@@ -120,7 +125,18 @@ function AdminMembers() {
                   권한
                   <select name="role" defaultValue={member.role}>
                     <option value="member">회원</option>
+                    <option value="staff">운영진</option>
                     <option value="admin">관리자</option>
+                  </select>
+                </label>
+                <label>
+                  레벨
+                  <select name="level" defaultValue={member.level ?? 0}>
+                    {LEVELS.map(l => (
+                      <option key={l.value} value={l.value}>
+                        {levelLabel(l.value)}
+                      </option>
+                    ))}
                   </select>
                 </label>
                 <label className="reason-field">
@@ -151,13 +167,18 @@ function AdminMembers() {
 }
 
 export function Admin() {
-  const [tab, setTab] = useState<'members' | 'activity' | 'achievements' | 'market'>('members');
+  const {user} = useSession();
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab');
+  const tab =
+    requested === 'activity' || requested === 'achievements' || requested === 'market' ? requested : 'members';
+  const setTab = (value: string) => setParams({tab: value});
   return (
     <div className="page-shell">
-      <PageHeading title="크루 관리">
+      <PageHeading title="관리">
         <span className="count-pill">
           <ShieldCheck size={17} />
-          관리자
+          {user ? ROLE_LABELS[user.role] : '운영진'}
         </span>
       </PageHeading>
       <div className="tabs admin-tabs">

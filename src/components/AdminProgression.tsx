@@ -1,9 +1,10 @@
-import {Check, Plus, Trash2} from 'lucide-react';
+import {Check, Trash2} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {EmptyState, ErrorNotice, Loading} from '@/components/ui';
 import {useResource} from '@/hooks/useResource';
 import {api} from '@/apis/client';
 import type {ActivityCounts, ActivityMember, AdminProgression as ProgressionData} from '@/types';
+import {conditionLabel} from '@/consts/achievement-conditions';
 import {ACTIVITY_METRICS} from '@/consts/progression';
 
 export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
@@ -43,49 +44,6 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
       setMessage('기록을 저장했습니다.');
     } catch (error) {
       setError(error instanceof Error ? error.message : '저장하지 못했습니다.');
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function create(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
-    const input = Object.fromEntries(new FormData(form));
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      await api('/admin/achievements', {
-        method: 'POST',
-        body: JSON.stringify({...input, target: Number(input.target)}),
-      });
-      form.reset();
-      resource.reload();
-      setMessage('업적을 추가했습니다.');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '추가하지 못했습니다.');
-    } finally {
-      setBusy(false);
-    }
-  }
-  async function updateGoal(event: FormEvent<HTMLFormElement>, id: string) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    setBusy(true);
-    setError('');
-    setMessage('');
-    try {
-      await api(`/admin/achievements/${id}`, {
-        method: 'PATCH',
-        body: JSON.stringify({
-          description: String(form.get('description') ?? '').trim(),
-          target: Number(form.get('target')),
-        }),
-      });
-      resource.reload();
-      setMessage('업적 조건을 수정했습니다.');
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '업적 조건을 수정하지 못했습니다.');
     } finally {
       setBusy(false);
     }
@@ -173,7 +131,6 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                     <div className="number-with-unit">
                       <input
                         type="number"
-                        readOnly={metric.id !== 'hosted' && metric.id !== 'attended'}
                         name={metric.id}
                         defaultValue={selected.counts[metric.id]}
                         min={0}
@@ -187,7 +144,7 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
                 ))}
               </div>
               <div className="form-footer">
-                <span>참여·완등은 방문 기록에서 자동 집계됩니다. 번개 개최·참여만 입력할 수 있어요.</span>
+                <span>타이틀은 분기별, 업적은 누적 기록으로 계산됩니다.</span>
                 <button className="button button-dark button-small" disabled={busy}>
                   기록 저장
                   <Check size={16} />
@@ -199,89 +156,16 @@ export function AdminProgression({mode}: {mode: 'activity' | 'achievements'}) {
           )}
         </section>
       ) : (
-        <div className="admin-honors-layout">
-          <section className="form-panel">
-            <div className="panel-title">
-              <h2>업적 추가</h2>
-              <Plus size={19} />
-            </div>
-            <form onSubmit={create}>
-              <label>
-                이름
-                <input name="name" placeholder="예: 초크는 거들 뿐" minLength={2} maxLength={40} required />
-              </label>
-              <label>
-                설명
-                <input
-                  name="description"
-                  placeholder="예: [더클라임] 빨강 문제 50개 완등"
-                  minLength={1}
-                  maxLength={160}
-                  required
-                />
-              </label>
-              <div className="form-grid">
-                <label>
-                  기준
-                  <select name="metric">
-                    {data.achievementMetrics.map(metric => (
-                      <option key={metric.id} value={metric.id}>
-                        {metric.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  목표 수량
-                  <input name="target" type="number" min={1} max={1000000} step={1} required />
-                </label>
-              </div>
-              <button className="button button-dark button-full" disabled={busy}>
-                업적 추가
-                <Plus size={17} />
-              </button>
-            </form>
-          </section>
+        <div className="admin-achievements-existing">
           <section className="admin-achievement-list">
             {data.achievements.map(item => (
               <article key={item.id}>
                 <div>
                   <h3>{item.name}</h3>
                   <p>{item.description}</p>
-                  <details className="achievement-goal-editor">
-                    <summary>조건 수정</summary>
-                    <form
-                      key={`${item.id}:${item.target}:${item.description}`}
-                      onSubmit={event => updateGoal(event, item.id)}
-                    >
-                      <label>
-                        설명
-                        <input
-                          aria-label={`${item.name} 설명`}
-                          name="description"
-                          defaultValue={item.description}
-                          required
-                          maxLength={160}
-                        />
-                      </label>
-                      <label>
-                        목표 수량
-                        <input
-                          aria-label={`${item.name} 목표 수량`}
-                          type="number"
-                          name="target"
-                          defaultValue={item.target}
-                          required
-                          min={1}
-                          max={1000000}
-                          step={1}
-                        />
-                      </label>
-                      <button className="button button-outline button-small" disabled={busy}>
-                        조건 저장
-                      </button>
-                    </form>
-                  </details>
+                  {item.condition && (
+                    <p className="achievement-rule-caption">{conditionLabel(item.condition, item.target)}</p>
+                  )}
                 </div>
                 <button
                   className="icon-button danger"

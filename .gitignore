@@ -6,3 +6,7 @@ deploy/.env.production
 .superpowers/
 *.log
 .DS_Store
+.vercel
+.env*
+
+.vercel-build/

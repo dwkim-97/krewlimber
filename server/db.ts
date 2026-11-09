@@ -1,15 +1,17 @@
+import {gymIdentity} from '../src/consts/gym-identity';
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
 import {DatabaseSync} from 'node:sqlite';
-import gymCatalog from './gyms.catalog.json';
-import {canonicalGymId} from './gym-catalog';
-import {INITIAL_ACHIEVEMENTS, ADDITIONAL_ACHIEVEMENTS} from '../src/consts/progression';
+import {achievementConditionsSchema} from './achievement-conditions';
+import {gymCommentsSchema} from './gym-comments';
+import {climbingSchema} from './climbing-schema';
+import {DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
   const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
-  if (version > 8) {
+  if (version > 6) {
     db.close();
     throw new Error('Unsupported database version.');
   }
@@ -23,11 +25,12 @@ export function openDatabase(path: string) {
       username TEXT NOT NULL UNIQUE COLLATE NOCASE,
       passwordHash TEXT NOT NULL,
       nickname TEXT NOT NULL,
+      fullName TEXT NOT NULL DEFAULT '',
       bio TEXT NOT NULL DEFAULT '',
       location TEXT NOT NULL DEFAULT '',
       gym TEXT NOT NULL DEFAULT '',
       grade TEXT NOT NULL DEFAULT '입문',
-      role TEXT NOT NULL CHECK(role IN ('member', 'admin')),
+      role TEXT NOT NULL CHECK(role IN ('member', 'staff', 'admin')),
       status TEXT NOT NULL CHECK(status IN ('pending', 'approved', 'rejected', 'suspended')),
       createdAt TEXT NOT NULL
     );
@@ -87,7 +90,7 @@ export function openDatabase(path: string) {
       const insert = db.prepare(
         'INSERT INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
       );
-      for (const achievement of INITIAL_ACHIEVEMENTS)
+      for (const achievement of DEFAULT_ACHIEVEMENTS)
         insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
       db.exec('PRAGMA user_version = 2;');
     });
@@ -146,70 +149,79 @@ export function openDatabase(path: string) {
         'ALTER TABLE pointLedger ADD COLUMN requestId TEXT; CREATE UNIQUE INDEX pointLedger_request ON pointLedger(actorId,requestId) WHERE requestId IS NOT NULL; PRAGMA user_version=5;'
       );
     });
-  if (version < 6)
+  if (
+    !db
+      .prepare('PRAGMA table_info(users)')
+      .all()
+      .some(c => c.name === 'level')
+  )
+    db.exec('ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 0 CHECK(level>=0 AND level<=11);');
+  db.exec(climbingSchema);
+  if (
+    !db
+      .prepare('PRAGMA table_info(gyms)')
+      .all()
+      .some(c => c.name === 'placeId')
+  )
+    db.exec('ALTER TABLE gyms ADD COLUMN placeId TEXT;');
+  db.exec('CREATE UNIQUE INDEX IF NOT EXISTS gyms_place ON gyms(placeId) WHERE placeId IS NOT NULL;');
+  if (
+    !db
+      .prepare('PRAGMA table_info(gymGrades)')
+      .all()
+      .some(c => c.name === 'sortOrder')
+  )
+    db.exec('ALTER TABLE gymGrades ADD COLUMN sortOrder INTEGER NOT NULL DEFAULT 0;');
+  for (const column of ['brandName', 'branchName']) {
+    if (
+      !db
+        .prepare('PRAGMA table_info(gyms)')
+        .all()
+        .some(c => c.name === column)
+    )
+      db.exec(`ALTER TABLE gyms ADD COLUMN ${column} TEXT NOT NULL DEFAULT '';`);
+  }
+  for (const gym of db.prepare("SELECT id,name FROM gyms WHERE brandName=''").all()) {
+    const identity = gymIdentity({name: String(gym.name)});
+    db.prepare('UPDATE gyms SET brandName=?,branchName=? WHERE id=?').run(
+      identity.brandName,
+      identity.branchName,
+      String(gym.id)
+    );
+  }
+  db.exec(gymCommentsSchema);
+  db.exec(achievementConditionsSchema);
+  if (version < 6) {
+    const rows = db.prepare('SELECT id,gymId,sortOrder FROM gymGrades').all();
+    const max = new Map<string, number>();
+    for (const r of rows) max.set(String(r.gymId), Math.max(max.get(String(r.gymId)) ?? 0, Number(r.sortOrder)));
     transaction(db, () => {
-      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 6) return;
-      db.exec(`
-        CREATE TEMP TABLE preservedFeatured AS SELECT userId,achievementId FROM featuredAchievements;
-        DROP TABLE featuredAchievements;
-        CREATE TABLE activityStats_v6 (
-          userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, quarter TEXT NOT NULL,
-          metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple','gray')),
-          value INTEGER NOT NULL CHECK(value>=0 AND value<=1000000 AND typeof(value)='integer'),
-          PRIMARY KEY(userId,quarter,metric)
+      for (const r of rows)
+        db.prepare('UPDATE gymGrades SET sortOrder=? WHERE id=?').run(
+          max.get(String(r.gymId))! - Number(r.sortOrder),
+          String(r.id)
         );
-        INSERT INTO activityStats_v6 SELECT userId,quarter,metric,value FROM activityStats;
-        DROP TABLE activityStats;
-        ALTER TABLE activityStats_v6 RENAME TO activityStats;
-        CREATE TABLE achievementDefinitions_v6 (
-          id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL,
-          metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple','gray','pointsEarned','pointsSpent')),
-          target INTEGER NOT NULL CHECK(target>0 AND target<=1000000 AND typeof(target)='integer')
+      const previousConditions = db.prepare('SELECT * FROM achievementConditions').all();
+      db.exec('DROP TABLE achievementConditions;');
+      db.exec(achievementConditionsSchema);
+      for (const c of previousConditions) {
+        const grade = db.prepare('SELECT sortOrder FROM gymGrades WHERE id=?').get(String(c.gradeId));
+        db.prepare(
+          'INSERT INTO achievementConditions(achievementId,gymId,gradeId,operator,difficultyRank) VALUES(?,?,?,?,?)'
+        ).run(
+          String(c.achievementId),
+          String(c.gymId),
+          String(c.gradeId),
+          c.operator === 'lte' ? 'gte' : String(c.operator),
+          Number(grade!.sortOrder) + 1
         );
-        INSERT INTO achievementDefinitions_v6(rowid,id,name,description,metric,target)
-          SELECT rowid,id,name,description,metric,target FROM achievementDefinitions;
-        DROP TABLE achievementDefinitions;
-        ALTER TABLE achievementDefinitions_v6 RENAME TO achievementDefinitions;
-        CREATE TABLE featuredAchievements (
-          userId TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-          achievementId TEXT NOT NULL REFERENCES achievementDefinitions(id) ON DELETE CASCADE
-        );
-        INSERT INTO featuredAchievements SELECT userId,achievementId FROM preservedFeatured;
-        DROP TABLE preservedFeatured;
-      `);
-      const insert = db.prepare(
-        'INSERT OR IGNORE INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
-      );
-      for (const achievement of ADDITIONAL_ACHIEVEMENTS)
-        insert.run(achievement.id, achievement.name, achievement.description, achievement.metric, achievement.target);
+      }
       db.exec('PRAGMA user_version=6;');
     });
-  if (version < 7)
-    transaction(db, () => {
-      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 7) return;
-      db.exec("ALTER TABLE users ADD COLUMN instagramUrl TEXT NOT NULL DEFAULT ''; PRAGMA user_version=7;");
-    });
-  if (version < 8)
-    transaction(db, () => {
-      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) >= 8) return;
-      db.exec(`
-        CREATE TABLE climbingGyms (id TEXT PRIMARY KEY,name TEXT NOT NULL,address TEXT NOT NULL,region TEXT NOT NULL,franchiseId TEXT NOT NULL,franchiseName TEXT NOT NULL,url TEXT NOT NULL);
-        CREATE TABLE climbingVisits (id TEXT PRIMARY KEY,userId TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,gymId TEXT NOT NULL REFERENCES climbingGyms(id),date TEXT NOT NULL,createdAt TEXT NOT NULL,updatedAt TEXT NOT NULL,UNIQUE(userId,date,gymId));
-        CREATE TABLE climbingColors (visitId TEXT NOT NULL REFERENCES climbingVisits(id) ON DELETE CASCADE,colorKey TEXT NOT NULL,name TEXT NOT NULL,hex TEXT NOT NULL,count INTEGER NOT NULL CHECK(count BETWEEN 1 AND 1000 AND typeof(count)='integer'),PRIMARY KEY(visitId,colorKey));
-        CREATE INDEX climbingVisits_user ON climbingVisits(userId,date DESC,id);
-        DELETE FROM featuredAchievements WHERE achievementId IN (SELECT id FROM achievementDefinitions WHERE metric IN ('participation','red','pink','purple','gray'));
-        PRAGMA user_version=8;
-      `);
-    });
-  transaction(db, () => {
-    const insert =
-      db.prepare(`INSERT INTO climbingGyms(id,name,address,region,franchiseId,franchiseName,url) VALUES(?,?,?,?,?,?,?)
-      ON CONFLICT(id) DO UPDATE SET name=excluded.name,address=excluded.address,region=excluded.region,franchiseId=excluded.franchiseId,franchiseName=excluded.franchiseName,url=excluded.url`);
-    for (const gym of gymCatalog.gyms) {
-      const canonical = gymCatalog.gyms.find(g => g.id === canonicalGymId(gym.id))!;
-      insert.run(gym.id, gym.name, gym.address, gym.region, canonical.franchiseId, canonical.franchiseName, gym.url);
-    }
-  });
+  }
+  db.exec(
+    "INSERT OR IGNORE INTO gyms(id,name,address,createdAt) VALUES('gym-climbingpark-gangnam','클라이밍파크 강남점','','2026-11-06'),('gym-theclimb-gangnam','더클라임 강남점','','2026-11-06'); INSERT OR IGNORE INTO gymGrades(id,gymId,name,color,createdAt) VALUES('park-gray','gym-climbingpark-gangnam','회색','#888888','2026-11-06'),('climb-purple','gym-theclimb-gangnam','보라','#8654ad','2026-11-06');"
+  );
   return db;
 }
 

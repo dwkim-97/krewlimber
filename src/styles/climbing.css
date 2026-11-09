@@ -1,437 +1,938 @@
-.climb-page-grid {
+.climbing-page {
+  max-width: 1200px;
+}
+.climbing-lead,
+.climbing-help {
+  color: #626959;
+  line-height: 1.7;
+}
+.climbing-panel {
+  border: 1px solid #dfe3d8;
+  border-radius: 18px;
+  background: #fff;
+  padding: 26px;
+  margin: 24px 0;
+}
+.climbing-panel h2 {
+  font-size: 22px;
+  margin: 0 0 18px;
+}
+.climbing-panel h3 {
+  margin: 12px 0;
+}
+.climbing-panel label,
+.climbing-search {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-  gap: 32px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  margin: 14px 0;
+}
+.climbing-page input:not([type='color']),
+.climbing-page select,
+.climbing-page textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ccd2c2;
+  border-radius: 8px;
+  background: #fff;
+  color: #242820;
+  font: inherit;
+}
+.climbing-page fieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.climbing-page :focus-visible {
+  outline: 3px solid #738f47;
+  outline-offset: 3px;
+}
+.climbing-fields {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16px;
+}
+.climbing-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
+}
+.climbing-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.climbing-stats > div {
+  background: #f5f7ef;
+  padding: 20px;
+  border-radius: 12px;
+  display: grid;
+  gap: 8px;
+}
+.climbing-stats strong {
+  font-size: 30px;
+}
+.climbing-stats span {
+  color: #626959;
+  font-size: 13px;
+}
+
+.grade-counters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 18px 0;
+}
+.grade-counter {
+  border: 1px solid #dfe3d8;
+  padding: 14px;
+  border-radius: 12px;
+}
+.grade-counter label {
+  display: flex;
+  align-items: center;
+  margin: 0 0 12px;
+}
+.grade-counter > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.grade-counter button {
+  flex-shrink: 0;
+  width: 42px;
+  height: 44px;
+  background: #f1f5e9;
+  border: 1px solid #d8dfcd;
+  border-radius: 8px;
+  font-size: 24px;
+  cursor: pointer;
+}
+.grade-counter input {
+  text-align: center;
+  min-width: 0;
+}
+.grade-counter i,
+.grade-badge i {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 1px solid #0003;
+  border-radius: 50%;
+  margin-right: 8px;
+  flex-shrink: 0;
+}
+.grade-badge {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #e1e5da;
+  padding: 6px 10px;
+  border-radius: 30px;
+  margin: 4px;
+  font-size: 13px;
+}
+.grade-add {
+  padding: 16px;
+  background: #f5f7ef;
+  border-radius: 12px;
+  display: flex;
+  align-items: end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.grade-add input[type='color'] {
+  width: 60px;
+  height: 44px;
+}
+.gyms-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr);
+  gap: 24px;
+  margin-top: 24px;
   align-items: start;
 }
-.climb-editor {
-  min-width: 0;
+.gym-map {
+  height: 520px;
+  background: #eef2e6;
+  border: 1px solid #dce2d1;
+  border-radius: 18px;
+  overflow: hidden;
+  position: sticky;
+  top: 100px;
 }
-.gym-select-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  text-align: left;
-  padding: 18px;
-  border: 1px dashed #a5ae8c;
-  background: #f1f4e6;
-  border-radius: 6px;
-  color: var(--ink);
-  margin: 20px 0;
+.map-message {
+  padding: 30px;
+  line-height: 1.8;
+  max-width: 430px;
 }
-.gym-select-button > span {
-  flex: 1;
+.gym-card {
+  padding: 22px;
+  border: 1px solid #dce2d1;
+  border-radius: 14px;
+  margin: 12px 0;
+  background: white;
+}
+.gym-card.selected {
+  outline: 2px solid #789345;
+}
+.gym-name {
+  font: inherit;
+  font-size: 19px;
   font-weight: 700;
-}
-.gym-select-button small {
-  display: block;
-  font-size: 11px;
-  line-height: 1.6;
-  font-weight: 400;
-  color: var(--muted);
-  margin-top: 5px;
-}
-.gym-dialog {
-  width: min(660px, calc(100vw - 32px));
-  max-height: calc(100dvh - 48px);
-  padding: 24px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--paper);
-  color: var(--ink);
-  box-shadow: 0 24px 100px #0003;
-}
-.gym-dialog::backdrop {
-  background: #171a16a6;
-  backdrop-filter: blur(3px);
-}
-.gym-dialog-header,
-.gym-search-tools {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
-}
-.gym-dialog-header h2 {
-  flex: 1;
-  margin: 0;
-  font-size: 24px;
-}
-.gym-search-tools .search-field {
-  flex: 1;
-  min-width: 0;
-}
-.gym-search-tools input {
-  min-width: 0;
-  width: 100%;
-}
-.gym-search-tools select {
-  width: 80px;
-}
-.gym-results {
-  max-height: min(440px, 52dvh);
-  overflow: auto;
-  border-top: 1px solid var(--line);
-}
-.gym-result {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  border-bottom: 1px solid var(--line);
-}
-.gym-result > button {
-  flex: 1;
-  padding: 16px 4px;
-  text-align: left;
   background: none;
   border: none;
-  min-width: 0;
-  color: var(--ink);
+  padding: 6px 0;
+  text-align: left;
+  cursor: pointer;
 }
-.gym-result > button:hover {
-  background: #e8eddb;
+.gym-card p {
+  color: #626959;
+  font-size: 14px;
 }
-.gym-result small {
-  display: block;
-  font-size: 11px;
+.place-results {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+.visit-note {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.climbing-panel details {
+  line-height: 1.8;
+}
+.climbing-panel summary {
+  cursor: pointer;
+  padding: 10px 0;
+}
+@media (max-width: 760px) {
+  .gyms-layout,
+  .climbing-fields {
+    grid-template-columns: 1fr;
+  }
+  .gym-map {
+    position: relative;
+    top: 0;
+    height: 320px;
+  }
+  .climbing-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .grade-counters {
+    grid-template-columns: 1fr;
+  }
+  .climbing-panel {
+    padding: 20px;
+  }
+}
+.gym-map-canvas {
+  width: 100%;
+  height: 100%;
+}
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  max-width: none;
+  background: #eef2e6;
+}
+.place-search {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+.place-search label {
+  flex: 1;
+  margin-bottom: 0;
+}
+.place-result {
+  border: 1px solid #dce2d1;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fff;
+  display: grid;
+  gap: 8px;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+}
+.place-result:hover {
+  background: #f1f6e8;
+}
+.place-result span {
+  font-size: 13px;
+  color: #626959;
+}
+.place-result b {
+  font-size: 13px;
+  color: #46632c;
+}
+.registration-grade {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin: 12px 0;
+}
+.registration-grade input[type='color'] {
+  width: 54px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.gym-detail {
+  scroll-margin-top: 100px;
+}
+.gym-comments {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid #dce2d1;
+}
+.gym-comment {
+  padding: 20px 0;
+  border-bottom: 1px solid #e5e8df;
+}
+.gym-comment time {
+  color: #6a7262;
+  font-size: 12px;
+}
+.gym-comment p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   line-height: 1.7;
-  color: var(--muted);
-  margin-top: 5px;
 }
-.gym-result > a {
+@media (max-width: 760px) {
+  .place-search {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .registration-grade {
+    gap: 8px;
+  }
+}
+.gym-location-picker {
+  padding: 14px;
+  margin: 14px 0;
+  background: #f5f8ed;
+  border: 1px solid #dce5cd;
+  border-radius: 10px;
+}
+.gym-location-picker > p {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.gym-map-label {
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid #718d50;
+  background: #fff;
+  color: #304322;
+  font:
+    600 12px/1.4 'Noto Sans KR',
+    sans-serif;
+  box-shadow: 0 2px 8px #26321b1c;
+  white-space: nowrap;
+}
+.gym-map-label:hover {
+  background: #edf4df;
+}
+.map-location-hint {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 34px;
+  z-index: 3;
+  padding: 10px 12px;
+  background: #fffffff2;
+  border: 1px solid #dce5cd;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: #4f6240;
+  pointer-events: none;
+}
+
+.map-fit-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 4;
+  padding: 8px 11px;
+  border: 1px solid #c9d4bc;
+  border-radius: 7px;
+  background: #fff;
+  color: #41582e;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 8px #26321b14;
+}
+.gym-registration-callout {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  border: 1px solid #d6e1c7;
+  background: linear-gradient(115deg, #edf3e2, #f9faf5);
+  padding: 18px 20px;
+  border-radius: 14px;
+  margin: 18px 0 24px;
+}
+.gym-registration-callout > span,
+.registration-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #dfeacb;
+  color: #4f6a35;
+}
+.gym-registration-callout > div {
+  flex: 1;
+}
+.gym-registration-callout strong {
+  font-size: 14px;
+}
+.gym-registration-callout p {
+  margin: 4px 0 0;
+  color: #69745d;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.gym-registration {
+  overflow: hidden;
+  border-color: #cfdcbe;
+}
+.registration-intro {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding-bottom: 22px;
+}
+.registration-kicker {
+  color: #78866b;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+.registration-intro h2 {
+  margin: 4px 0 6px;
+  font-size: 23px;
+}
+.registration-intro p {
+  color: #68735d;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.registration-steps {
+  display: flex;
+  list-style: none;
+  padding: 14px 0;
+  gap: 25px;
+  border-block: 1px solid #e6eadf;
+  margin: 0 0 20px;
+}
+.registration-steps li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: #8b9381;
+}
+.registration-steps li > span {
+  display: grid;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  background: #f0f2eb;
+  border-radius: 50%;
+  font-size: 11px;
+}
+.registration-steps li.active,
+.registration-steps li.done {
+  color: #476333;
+  font-weight: 600;
+}
+.registration-steps li.active > span,
+.registration-steps li.done > span {
+  background: #e3edcf;
+}
+.brand-quick-search {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0;
+}
+.brand-quick-search button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dfe4d7;
+  border-radius: 30px;
+  padding: 8px 12px;
+  background: white;
+  font-size: 12px;
+  color: #47523d;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.brand-quick-search button:hover {
+  background: #f0f5e7;
+  border-color: #b6c99d;
+}
+.brand-quick-search i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.registration-search-input {
+  position: relative;
+}
+.registration-search-input > svg {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7d8a6f;
+}
+.climbing-page .registration-search-input input {
+  padding-left: 40px;
+}
+.registration-results {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-height: 390px;
+  overflow: auto;
+  padding: 2px;
+}
+.registration-results .place-result {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px;
+}
+.registration-results .place-result > svg {
+  color: #788b64;
+}
+.registration-results .place-result > span {
+  display: grid;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+}
+.registration-results .place-result strong {
+  font-size: 13px;
+}
+.registration-results .place-result small {
+  font-size: 11px;
+  line-height: 1.6;
+  color: #7c8473;
+}
+.registration-results .place-result b {
   font-size: 11px;
   white-space: nowrap;
 }
-.gym-catalog-note,
-.gym-no-result {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.8;
+.registration-results .place-selected {
+  background: #f2f7e9;
+  border-color: #9eb882;
 }
-.climb-palette-heading {
+.registration-confirm {
+  border-top: 1px solid #e3e9da;
+  margin-top: 24px;
+  padding-top: 22px;
+  animation: item-appear 180ms ease-out;
+}
+.selected-place-summary {
   display: flex;
+  gap: 12px;
   align-items: center;
-  justify-content: space-between;
-  margin: 24px 0 14px;
+  padding: 17px;
+  background: #f1f6e8;
+  border-radius: 11px;
+  color: #4e6937;
 }
-.climb-palette-heading h3 {
+.selected-place-summary > div {
+  flex: 1;
+}
+.selected-place-summary h3 {
   margin: 0;
-  font-size: 16px;
+  font-size: 17px;
 }
-.climb-palette-heading > span {
-  font-size: 11px;
-  color: var(--muted);
+.selected-place-summary p {
+  margin: 5px 0 0;
+  color: #708060;
+  font-size: 12px;
 }
-.climb-color-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 10px;
-}
-.climb-counter {
-  position: relative;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: #fff9;
-}
-.climb-counter label {
-  margin: 0;
-}
-.climb-counter label > span {
+.registration-grade-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  margin: 24px 0 8px;
 }
-.climb-color-dot {
-  display: inline-block;
-  width: 21px;
-  height: 21px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  border: 1px solid #0003;
-  box-shadow: inset 0 1px 1px #fff3;
+.registration-grade-title h3 {
+  margin: 0;
+  font-size: 17px;
 }
-.climb-counter input {
-  margin-top: 9px;
-  padding: 8px 10px;
-  font-size: 15px;
+.registration-grade-title > span {
+  margin-left: auto;
+  color: #7b846f;
+  font-size: 11px;
 }
-.custom-remove {
-  position: absolute;
-  right: 4px;
-  top: 3px;
-  background: none;
-  border: 0;
-  padding: 3px;
-  color: var(--muted);
-}
-.custom-color-panel {
+.grade-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 18px 0;
 }
-.custom-color-panel summary {
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--muted);
-}
-.custom-color-fields {
-  display: flex;
+.grade-palette > span {
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
+  gap: 7px;
+  border: 1px solid #e0e5d9;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  background: #fcfdf9;
 }
-.custom-color-fields input[type='color'] {
-  width: 46px;
-  height: 42px;
-  padding: 4px;
+.grade-palette i {
+  width: 17px;
+  height: 17px;
+  border-radius: 6px 8px 5px 7px;
+  border: 1px solid #0002;
+  box-shadow: inset 0 -2px 0 #0001;
+}
+.registration-edit-grades {
+  border: 1px solid #e2e7da;
+  padding: 0 14px;
+  border-radius: 10px;
+  margin: 12px 0 22px;
+  font-size: 13px;
+}
+.grade-order {
+  color: #8b947e;
+  font-size: 11px;
+  width: 14px;
   flex-shrink: 0;
 }
-.custom-color-fields input:not([type='color']) {
-  flex: 1;
+.registration-submit {
+  border-top: 1px solid #e5eadc;
+  padding-top: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.registration-submit > span {
+  color: #7b886c;
+  font-size: 12px;
+}
+@media (max-width: 760px) {
+  .gym-registration-callout {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 16px;
+  }
+  .gym-registration-callout .button {
+    margin-left: 59px;
+  }
+  .registration-intro {
+    align-items: flex-start;
+  }
+  .registration-intro h2 {
+    font-size: 20px;
+  }
+  .registration-steps {
+    gap: 12px;
+  }
+  .registration-steps li {
+    gap: 4px;
+    font-size: 11px;
+  }
+  .registration-results {
+    grid-template-columns: 1fr;
+  }
+  .registration-submit {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .registration-submit .button {
+    width: 100%;
+  }
+}
+.gym-brand-filters {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 22px 0 8px;
+}
+.gym-brand-filters button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  background: #fff;
+  border: 1px solid #dde3d5;
+  border-radius: 9px;
+  color: #657458;
+  transition:
+    background 150ms,
+    border-color 150ms;
+}
+.gym-brand-filters button.active {
+  background: #ecf3df;
+  border-color: #a8bd89;
+  color: #3f5c29;
+}
+.gym-brand-filters button > span {
+  color: #8b967f;
+  font-size: 11px;
+}
+.gym-brand-filters i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+.registration-brand-preview {
+  margin: 18px 0;
+  padding: 15px 17px;
+  border: 1px solid #e0e7d6;
+  background: #f8faf3;
+  border-radius: 11px;
+}
+.registration-brand-preview > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #60734e;
+}
+.registration-brand-preview strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.registration-brand-preview > div > span:last-child:not(:first-child) {
+  font-size: 10px;
+}
+.registration-brand-preview > div:first-child > span {
+  margin-left: auto;
+}
+.registration-brand-preview .grade-palette {
+  margin: 12px 0 0;
+}
+.gym-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  max-height: 580px;
+  overflow-y: auto;
+  padding: 3px;
+  margin: 12px -3px;
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5bd transparent;
+}
+.gym-card-grid .gym-card {
+  margin: 0;
+  padding: 13px;
+  border-radius: 11px;
   min-width: 0;
 }
-.custom-color-fields button {
-  flex-shrink: 0;
-}
-.climb-history-heading {
+.gym-card-grid .gym-name {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  border-bottom: 2px solid var(--ink);
-  padding-bottom: 18px;
-}
-.climb-history-heading h2 {
-  margin: 0;
-  font-size: 22px;
-}
-.climb-history-heading > span {
-  font-size: 12px;
-  color: var(--muted);
-}
-.climb-history ul {
-  list-style: none;
+  align-items: center;
+  gap: 6px;
   padding: 0;
-  margin: 0;
-  max-height: 1100px;
-  overflow: auto;
+  font-size: 13px;
+  width: 100%;
 }
-.climb-history li {
-  padding: 22px 0;
-  border-bottom: 1px solid var(--line);
+.gym-card-grid .gym-name > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.climb-history-title {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
+.gym-card-grid .gym-name > svg {
+  color: #859571;
 }
-.climb-history-title time {
-  color: var(--muted);
+.gym-card-grid .gym-card-address {
+  margin: 6px 0 9px;
   font-size: 11px;
-  letter-spacing: 0.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #87917a;
 }
-.climb-history-title h3 {
-  font-size: 16px;
-  margin: 6px 0;
-  overflow-wrap: anywhere;
+.gym-card-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 13px;
 }
-.climb-record-actions {
+.gym-card-palette i {
+  display: block;
+  width: 12px;
+  height: 12px;
+  border: 1px solid #0002;
+  border-radius: 4px;
+}
+.gym-card-bottom {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 11px;
+  padding-top: 8px;
+  border-top: 1px solid #e8ecdf;
 }
-.climb-record-actions .text-button {
-  font-size: 12px;
+.gym-card-bottom > span {
+  font-size: 9px;
+  color: #929b86;
 }
-.color-chips {
+.gym-card-bottom > a {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #58753d;
+  white-space: nowrap;
+}
+.gym-grade-ladder {
   display: flex;
   flex-wrap: wrap;
   gap: 7px;
+  padding: 0;
+  margin: 12px 0 18px;
+  list-style: none;
 }
-.color-chip {
-  display: inline-flex;
+.gym-grade-ladder li {
+  display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  border-radius: 20px;
-  background: #fff9;
-  border: 1px solid var(--line);
-}
-.color-chip .climb-color-dot {
-  width: 16px;
-  height: 16px;
-}
-.color-chip strong {
-  font-size: 11px;
-  min-width: 10px;
-}
-.climb-summary-link {
-  margin-top: 20px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  background: #f8faf4;
+  border: 1px solid #e0e6d6;
+  border-radius: 8px;
+  padding: 6px 9px;
   font-size: 12px;
 }
-.climb-summary-top {
+.gym-grade-ladder small {
+  color: #9ba58d;
+  font-size: 9px;
+}
+.gym-grade-ladder i {
+  width: 12px;
+  height: 12px;
+  border: 1px solid #0002;
+  border-radius: 4px;
+}
+.gym-discussion {
+  border-top: 1px solid #e4e9da;
+  padding-top: 4px;
+}
+.gym-discussion > summary {
+  font-size: 13px;
+  color: #6b7e56;
+}
+.gym-editor {
+  border: 1px solid #d9e3cd;
+  border-radius: 11px;
+  margin: 18px 0;
+  padding: 16px;
+  background: #fbfcf8;
+}
+.gym-editor > header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
-  flex-wrap: wrap;
 }
-.climb-summary-stats {
-  display: flex;
-  gap: 24px;
+.gym-editor > header h3 {
+  margin: 0;
 }
-.climb-summary-stats > span {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--muted);
-}
-.climb-summary-stats strong {
-  color: var(--ink);
-  font-size: 28px;
-}
-.franchise-list {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.franchise-group {
-  border: 1px solid var(--line);
-  background: #fff9;
-  border-radius: 7px;
-}
-.franchise-group > summary {
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 22px;
-  cursor: pointer;
-}
-.franchise-group > summary::-webkit-details-marker {
-  display: none;
-}
-.franchise-group > summary > div:first-child {
-  flex: 1;
-  min-width: 100px;
-}
-.franchise-group h3 {
-  margin: 0 0 5px;
-  font-size: 17px;
-}
-.franchise-group small {
-  display: block;
-  color: var(--muted);
-  font-size: 11px;
-}
-.franchise-group > summary > .color-chips {
-  flex: 1;
-}
-.franchise-group[open] > summary > svg {
-  transform: rotate(180deg);
-}
-.branch-summary-list {
-  border-top: 1px solid var(--line);
-  background: #eff2e77a;
-  padding: 0 22px;
-}
-.branch-summary {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line);
-}
-.branch-summary:last-child {
+.gym-editor fieldset {
+  min-width: 0;
+  padding: 0;
+  margin: 0;
   border: 0;
 }
-.branch-summary > div:first-child {
-  flex: 1;
+.gym-edit-grades {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0;
 }
-.branch-summary strong {
+.gym-edit-grades li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0;
+}
+.gym-edit-grades input[type='color'] {
+  width: 30px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  flex-shrink: 0;
+}
+.climbing-page .gym-edit-grades input:not([type='color']) {
+  min-width: 0;
+  padding: 7px 8px;
+  min-height: 34px;
   font-size: 12px;
 }
-.branch-summary small {
-  margin-top: 5px;
+.grade-row-actions {
+  display: flex;
+  gap: 2px;
 }
-input[readonly] {
-  background: #eef0e9;
-  color: #62695b;
+.grade-row-actions .icon-button {
+  width: 26px;
+  height: 30px;
+  min-height: 30px;
+  padding: 2px;
+  border: 1px solid #e2e8d9;
+  border-radius: 5px;
 }
-@media (max-width: 1100px) {
-  .header-inner {
-    gap: 18px;
-  }
-  .nav {
-    gap: 16px;
-  }
-  .nav > a {
-    font-size: 11px;
-  }
-  .climb-page-grid {
-    gap: 22px;
-  }
-  .climb-color-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.gym-editor-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #e6eadf;
+}
+.edit-location {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+}
+.edit-location > span {
+  flex: 1;
+  color: #7b876d;
+}
+.gym-edit-location-search {
+  margin-top: 18px;
+  border-top: 1px solid #e6eadf;
+  padding-top: 10px;
+}
+.registration-close {
+  margin-left: auto;
+  align-self: flex-start;
 }
 @media (max-width: 760px) {
-  .climb-page-grid {
-    grid-template-columns: minmax(0, 1fr);
+  .gym-card-grid {
+    max-height: 440px;
+    gap: 8px;
   }
-  .climb-color-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .gym-card-grid .gym-card {
+    padding: 11px;
   }
-  .climb-editor {
-    padding: 20px;
+  .gym-card-grid .gym-name {
+    font-size: 12px;
   }
-  .climb-editor .form-footer {
-    align-items: flex-start;
-    flex-direction: column;
+  .gym-card-bottom > span {
+    font-size: 8px;
   }
-  .franchise-group > summary {
-    flex-wrap: wrap;
-    padding: 18px;
-  }
-  .franchise-group > summary > .color-chips {
-    flex-basis: calc(100% - 40px);
-    order: 3;
-  }
-  .franchise-group > summary > svg {
-    margin-left: auto;
-  }
-  .branch-summary {
-    flex-wrap: wrap;
-  }
-  .branch-summary > .color-chips {
-    flex-basis: 100%;
-  }
-  .gym-dialog {
-    padding: 18px;
-  }
-  .gym-catalog-note {
-    font-size: 10px;
-  }
-  .custom-color-fields {
-    gap: 6px;
-  }
-  .custom-color-fields .button {
-    padding: 10px;
-  }
-  .climb-summary-stats {
-    gap: 18px;
-  }
-}
-@media (max-width: 380px) {
-  .climb-color-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .gym-editor {
+    padding: 12px;
   }
 }

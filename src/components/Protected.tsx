@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '@/consts/roles';
 import {LockKeyhole} from 'lucide-react';
 import {Link, Navigate, useLocation} from 'react-router-dom';
 import {Fragment, type ReactNode} from 'react';
@@ -28,12 +29,12 @@ export function Protected({children, access}: {children: ReactNode; access: 'use
         </EmptyState>
       </div>
     );
-  if (access === 'admin' && user.role !== 'admin')
+  if (access === 'admin' && !hasManagementAccess(user.role))
     return (
       <div className="page-shell">
         <EmptyState
           title="운영진을 위한 공간이에요"
-          description="회원 관리는 관리자 권한이 있는 계정만 이용할 수 있습니다."
+          description="회원 관리는 운영진 권한이 있는 계정만 이용할 수 있습니다."
         >
           <Link className="button button-dark" to="/">
             홈으로

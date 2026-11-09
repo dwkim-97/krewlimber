@@ -1,7 +1,10 @@
-import {Check, Clock3, KeyRound, LogOut, ShieldCheck} from 'lucide-react';
+import {ROLE_LABELS} from '@/consts/roles';
+import {Check, Clock3, KeyRound, LogOut, ShieldCheck, Mountain, UserRound, Award} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
-import {ClimbingSummaryView} from '@/components/ClimbingSummary';
+import {Climbing} from '@/pages/Climbing';
+import {LevelSummary} from '@/components/LevelSummary';
+import '@/styles/climbing.css';
 import {Achievements} from '@/components/Achievements';
 import {Avatar, ErrorNotice, PageHeading, TextLink} from '@/components/ui';
 import {useSession} from '@/hooks/useSession';
@@ -14,13 +17,11 @@ export function Me() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [climbingRevision, setClimbingRevision] = useState(0);
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
-  const selectedTab = params.get('tab');
   const tab =
-    selectedTab === 'achievements' || (selectedTab === 'records' && user?.status === 'approved')
-      ? selectedTab
-      : 'profile';
+    params.get('tab') === 'climbing' ? 'climbing' : params.get('tab') === 'achievements' ? 'achievements' : 'profile';
   if (!user) return null;
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,7 +75,15 @@ export function Me() {
   const approved = user.status === 'approved';
   return (
     <div className="page-shell">
-      <PageHeading title="내 정보">{approved && <TextLink to="/me/orders">내 포인트·교환</TextLink>}</PageHeading>
+      <PageHeading title="내 정보">
+        {approved && (
+          <div className="climbing-actions">
+            <TextLink to="/market">포인트 마켓</TextLink>
+            <TextLink to="/me/orders">내 포인트·교환</TextLink>
+          </div>
+        )}
+      </PageHeading>
+      {approved && <LevelSummary key={`${user.id}-${climbingRevision}`} />}
       <div className="profile-layout">
         <aside className="profile-summary">
           <Avatar name={user.nickname} index={0} />
@@ -84,7 +93,7 @@ export function Me() {
             {approved ? <ShieldCheck size={14} /> : <Clock3 size={14} />}
             {STATUS_LABELS[user.status]}
           </span>
-          {user.role === 'admin' && <span className="admin-label">관리자</span>}
+          <span className="admin-label">{ROLE_LABELS[user.role]}</span>
           <div className="summary-grade">
             <span>주요 난이도</span>
             <strong>{user.grade}</strong>
@@ -97,15 +106,15 @@ export function Me() {
         <div className="profile-content">
           <div className="tabs" aria-label="내 정보 메뉴">
             <button className={tab === 'profile' ? 'active' : ''} onClick={() => setParams({tab: 'profile'})}>
-              프로필
+              <UserRound size={15} aria-hidden="true" /> 프로필
             </button>
             {approved && (
-              <button className={tab === 'records' ? 'active' : ''} onClick={() => setParams({tab: 'records'})}>
-                기록
+              <button className={tab === 'climbing' ? 'active' : ''} onClick={() => setParams({tab: 'climbing'})}>
+                <Mountain size={15} aria-hidden="true" /> 등반 기록
               </button>
             )}
             <button className={tab === 'achievements' ? 'active' : ''} onClick={() => setParams({tab: 'achievements'})}>
-              업적
+              <Award size={15} aria-hidden="true" /> 업적
             </button>
           </div>
           {!approved && (
@@ -130,8 +139,10 @@ export function Me() {
             </div>
           )}
           {error && <ErrorNotice message={error} retry={null} />}
-          {tab === 'records' ? (
-            <ClimbingSummaryView key={user.id} />
+          {tab === 'climbing' ? (
+            approved ? (
+              <Climbing key={user.id} embedded onRecordsChange={() => setClimbingRevision(value => value + 1)} />
+            ) : null
           ) : tab === 'achievements' ? (
             <Achievements key={user.id} />
           ) : (
@@ -143,6 +154,18 @@ export function Me() {
                 </div>
                 <form onSubmit={saveProfile} key={`${user.id}-${user.nickname}-${user.grade}`}>
                   <div className="form-grid">
+                    <label>
+                      한글 이름
+                      <input
+                        name="fullName"
+                        defaultValue={user.fullName}
+                        autoComplete="name"
+                        placeholder="홍길동"
+                        required
+                        minLength={2}
+                        maxLength={30}
+                      />
+                    </label>
                     <label>
                       닉네임
                       <input
@@ -181,15 +204,6 @@ export function Me() {
                       />
                     </label>
                   </div>
-                  <label>
-                    인스타그램
-                    <input
-                      name="instagramUrl"
-                      defaultValue={user.instagramUrl}
-                      placeholder="클라이밍 인스타 계정"
-                      maxLength={200}
-                    />
-                  </label>
                   <label>
                     한 줄 소개
                     <textarea
@@ -234,9 +248,9 @@ export function Me() {
                         type="password"
                         autoComplete="new-password"
                         required
-                        minLength={12}
+                        minLength={4}
                         maxLength={128}
-                        placeholder="12자 이상"
+                        placeholder="4자 이상"
                       />
                     </label>
                     <label>
@@ -246,7 +260,7 @@ export function Me() {
                         type="password"
                         autoComplete="new-password"
                         required
-                        minLength={12}
+                        minLength={4}
                         maxLength={128}
                       />
                     </label>

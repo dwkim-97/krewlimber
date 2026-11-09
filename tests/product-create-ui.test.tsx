@@ -9,12 +9,13 @@ import {SessionContext} from '../src/stores/session';
 import type {User} from '../src/types';
 
 const user: User = {
+ level:0,
+  fullName: '홍길동',
   id: 'admin',
   username: 'test.admin',
   nickname: '운영진',
   role: 'admin',
   status: 'approved',
-  instagramUrl: '',
   bio: '',
   grade: '입문',
   location: '',
@@ -222,9 +223,9 @@ it('rejects invalid file types and large images without sending a request', asyn
   });
   expect((await screen.findByRole('alert')).textContent).toContain('JPG');
   fireEvent.change(screen.getByLabelText('상품 이미지'), {
-    target: {files: [new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'large.png', {type: 'image/png'})]},
+    target: {files: [new File([new Uint8Array(4 * 1024 * 1024 + 1)], 'large.png', {type: 'image/png'})]},
   });
-  expect((await screen.findByRole('alert')).textContent).toContain('5MB');
+  expect((await screen.findByRole('alert')).textContent).toContain('4MB');
   expect(fetcher).not.toHaveBeenCalled();
 });
 

@@ -1,0 +1,7 @@
+data/
+tests/
+docs/
+.superpowers/
+deploy/.env*
+.env*
+*.log

@@ -1,5 +1,7 @@
+import {hasManagementAccess} from '../src/consts/roles';
 import {randomBytes, randomUUID} from 'node:crypto';
-import type {DatabaseSync} from 'node:sqlite';
+import {PostgresDatabase, type Database} from './database';
+import {DatabaseRateStore} from './rate-store';
 import {resolve} from 'node:path';
 import express, {type ErrorRequestHandler, type RequestHandler} from 'express';
 import {ipKeyGenerator, rateLimit} from 'express-rate-limit';
@@ -18,18 +20,20 @@ import {
   verifyPassword,
   type UserRecord,
 } from './auth';
-import {transaction} from './db';
+import {transaction} from './database';
 import {ApiError} from './errors';
 import {currentQuarter, decorateMembers} from './progression';
-import {registerClimbingRoutes} from './climbing-routes';
 import {registerProgressionRoutes} from './progression-routes';
+import {registerGymComments} from './gym-comments';
+import {registerClimbingRoutes} from './climbing-routes';
 import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
+import type {ImageStorage} from './image-storage';
 import {registerMarketImageRoutes} from './market-images';
-import {usernameSchema as username, passwordSchema as password, nicknameSchema, instagramSchema} from './validation';
+import {usernameSchema as username, passwordSchema as password, nicknameSchema, fullNameSchema} from './validation';
 
 const profileSchema = z.object({
-  instagramUrl: instagramSchema,
+  fullName: fullNameSchema.optional(),
   nickname: nicknameSchema,
   bio: z.string().trim().max(200),
   location: z.string().trim().max(30),
@@ -56,19 +60,29 @@ export function createApp({
   secureCookies,
   trustProxy,
   uploadsDir = resolve('data/uploads'),
+  imageStorage,
 }: {
-  db: DatabaseSync;
+  db: Database;
   origin: string;
   secureCookies: boolean;
-  trustProxy: string | false;
+  trustProxy: string | false | number;
   uploadsDir?: string;
+  imageStorage?: ImageStorage;
 }) {
   const app = express();
   app.set('trust proxy', trustProxy);
   app.disable('x-powered-by');
   app.use(
     helmet({
-      contentSecurityPolicy: secureCookies ? {directives: {imgSrc: ["'self'", 'data:', 'blob:', 'https:']}} : false,
+      contentSecurityPolicy: secureCookies
+        ? {
+            directives: {
+              imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+              scriptSrc: ["'self'", 'https://dapi.kakao.com', 'https://t1.daumcdn.net', 'https://t1.kakaocdn.net'],
+              connectSrc: ["'self'", 'https://dapi.kakao.com', 'https://*.daumcdn.net'],
+            },
+          }
+        : false,
       strictTransportSecurity: secureCookies ? undefined : false,
     })
   );
@@ -81,7 +95,10 @@ export function createApp({
     next();
   });
 
+  const rateStore = (prefix: string) =>
+    db instanceof PostgresDatabase ? new DatabaseRateStore(db, prefix) : undefined;
   const authLimiter = rateLimit({
+    store: rateStore('auth:'),
     windowMs: 15 * 60 * 1000,
     limit: 15,
     skipSuccessfulRequests: true,
@@ -93,11 +110,12 @@ export function createApp({
   app.use(
     '/api/me/password',
     rateLimit({
+      store: rateStore('password:'),
       windowMs: 15 * 60 * 1000,
       limit: 15,
       skipSuccessfulRequests: true,
-      keyGenerator: req => {
-        const user = sessionUser(db, req);
+      keyGenerator: async req => {
+        const user = await sessionUser(db, req);
         return user ? `member:${user.id}` : ipKeyGenerator(req.ip ?? '');
       },
       standardHeaders: 'draft-8',
@@ -108,6 +126,7 @@ export function createApp({
   app.use(
     '/api/auth/signup',
     rateLimit({
+      store: rateStore('signup:'),
       windowMs: 60 * 60 * 1000,
       limit: 5,
       standardHeaders: 'draft-8',
@@ -116,140 +135,153 @@ export function createApp({
     })
   );
 
-  function requireUser(req: express.Request): User {
-    const user = sessionUser(db, req);
+  async function requireUser(req: express.Request): Promise<User> {
+    const user = await sessionUser(db, req);
     if (!user) throw new ApiError(401, '로그인이 필요합니다.');
     return user;
   }
-  function requireMember(req: express.Request) {
-    const user = requireUser(req);
+  async function requireMember(req: express.Request) {
+    const user = await requireUser(req);
     if (user.status !== 'approved') throw new ApiError(403, '운영진 승인 후 이용할 수 있습니다.');
     return user;
   }
-  function requireAdmin(req: express.Request) {
-    const user = requireMember(req);
-    if (user.role !== 'admin') throw new ApiError(403, '관리자 권한이 필요합니다.');
+  async function requireAdmin(req: express.Request) {
+    const user = await requireMember(req);
+    if (!hasManagementAccess(user.role)) throw new ApiError(403, '운영진 또는 관리자 권한이 필요합니다.');
     return user;
   }
-  function audit(actorId: string, targetId: string, action: string, details: object) {
-    db.prepare('INSERT INTO auditLog (actorId, targetId, action, details, createdAt) VALUES (?, ?, ?, ?, ?)').run(
-      actorId,
-      targetId,
-      action,
-      JSON.stringify(details),
-      new Date().toISOString()
-    );
+  async function audit(actorId: string, targetId: string, action: string, details: object) {
+    await db
+      .prepare('INSERT INTO auditLog (actorId, targetId, action, details, createdAt) VALUES (?, ?, ?, ?, ?)')
+      .run(actorId, targetId, action, JSON.stringify(details), new Date().toISOString());
   }
-  function honors(includeInactive: boolean): Honor[] {
-    return db
+  async function honors(includeInactive: boolean): Promise<Honor[]> {
+    return (await db
       .prepare(
         `SELECT h.id, h.userId, h.title, h.description, h.kind, h.achievedAt,
       h.createdAt, u.nickname, u.grade FROM honors h JOIN users u ON u.id = h.userId
       WHERE (? = 1 OR u.status = 'approved') ORDER BY h.achievedAt DESC, h.createdAt DESC`
       )
-      .all(includeInactive ? 1 : 0) as unknown as Honor[];
+      .all(includeInactive ? 1 : 0)) as unknown as Honor[];
   }
 
   app.get('/api/health', (_req, res) => res.json({status: 'ok'}));
-  app.get('/api/me', (req, res) => res.json({user: sessionUser(db, req)}));
+  app.get('/api/me', async (req, res) => res.json({user: await sessionUser(db, req)}));
   app.post('/api/auth/signup', async (req, res) => {
-    const input = z.object({username, password, nickname: profileSchema.shape.nickname}).parse(req.body);
-    if (db.prepare('SELECT id FROM users WHERE username = ?').get(input.username))
+    const input = z
+      .object({username, password, fullName: fullNameSchema, nickname: profileSchema.shape.nickname})
+      .parse(req.body);
+    if (await db.prepare('SELECT id FROM users WHERE username = ?').get(input.username))
       throw new ApiError(409, '이미 사용 중인 아이디입니다.');
     let user: User;
     try {
       user = await createAccount(db, {...input, role: 'member', status: 'pending'});
     } catch (error) {
-      if (error instanceof Error && error.message.includes('UNIQUE constraint failed'))
+      if (
+        error instanceof Error &&
+        (error.message.includes('UNIQUE constraint failed') || ('code' in error && error.code === '23505'))
+      )
         throw new ApiError(409, '이미 사용 중인 아이디입니다.');
       throw error;
     }
-    createSession(db, res, user.id, secureCookies);
+    await createSession(db, res, user.id, secureCookies);
     res.status(201).json({user});
   });
   app.post('/api/auth/login', async (req, res) => {
     const input = z.object({username, password: z.string().min(1).max(128)}).parse(req.body);
-    const record = db.prepare('SELECT * FROM users WHERE username = ?').get(input.username) as unknown as
+    const record = (await db.prepare('SELECT * FROM users WHERE username = ?').get(input.username)) as unknown as
       UserRecord | undefined;
     const valid = await verifyPassword(input.password, record?.passwordHash ?? dummyHash);
     if (!record || !valid) throw new ApiError(401, '아이디 또는 비밀번호가 올바르지 않습니다.');
-    const current = db.prepare('SELECT * FROM users WHERE id = ?').get(record.id) as unknown as UserRecord;
-    if (current.passwordHash !== record.passwordHash)
-      throw new ApiError(401, '비밀번호가 변경되었습니다. 다시 로그인해주세요.');
-    if (current.status === 'suspended') throw new ApiError(403, '활동이 정지된 계정입니다. 운영진에게 문의해주세요.');
-    endSession(db, req, res, secureCookies);
-    createSession(db, res, record.id, secureCookies);
-    res.json({user: db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(record.id)});
+    const loggedIn = await transaction(db, async () => {
+      const current = (await db.prepare('SELECT * FROM users WHERE id = ?').get(record.id)) as unknown as UserRecord;
+      if (current.passwordHash !== record.passwordHash)
+        throw new ApiError(401, '비밀번호가 변경되었습니다. 다시 로그인해주세요.');
+      if (current.status === 'suspended') throw new ApiError(403, '활동이 정지된 계정입니다. 운영진에게 문의해주세요.');
+      await endSession(db, req, res, secureCookies);
+      await createSession(db, res, record.id, secureCookies);
+      return await db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(record.id);
+    });
+    res.json({user: loggedIn});
   });
-  app.post('/api/auth/logout', (req, res) => {
-    endSession(db, req, res, secureCookies);
+  app.post('/api/auth/logout', async (req, res) => {
+    await endSession(db, req, res, secureCookies);
     res.json({ok: true});
   });
-  app.patch('/api/me', (req, res) => {
-    const user = requireUser(req);
+  app.patch('/api/me', async (req, res) => {
+    const user = await requireUser(req);
     const input = profileSchema.parse(req.body);
-    db.prepare(
-      'UPDATE users SET nickname = ?, bio = ?, location = ?, gym = ?, grade = ?, instagramUrl = ? WHERE id = ?'
-    ).run(input.nickname, input.bio, input.location, input.gym, input.grade, input.instagramUrl, user.id);
-    res.json({user: db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(user.id)});
+    await db
+      .prepare('UPDATE users SET nickname = ?, fullName = ?, bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?')
+      .run(input.nickname, input.fullName ?? user.fullName, input.bio, input.location, input.gym, input.grade, user.id);
+    res.json({user: await db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(user.id)});
   });
   app.patch('/api/me/password', async (req, res) => {
-    const user = requireUser(req);
+    const user = await requireUser(req);
     const input = z.object({currentPassword: z.string().min(1).max(128), newPassword: password}).parse(req.body);
-    const record = db.prepare('SELECT passwordHash FROM users WHERE id = ?').get(user.id) as {passwordHash: string};
+    const record = (await db.prepare('SELECT passwordHash FROM users WHERE id = ?').get(user.id)) as {
+      passwordHash: string;
+    };
     if (!(await verifyPassword(input.currentPassword, record.passwordHash)))
       throw new ApiError(401, '현재 비밀번호가 올바르지 않습니다.');
     const nextHash = await hashPassword(input.newPassword);
-    transaction(db, () => {
-      const updated = db
+    await transaction(db, async () => {
+      await requireUser(req);
+      const updated = await db
         .prepare('UPDATE users SET passwordHash = ? WHERE id = ? AND passwordHash = ?')
         .run(nextHash, user.id, record.passwordHash);
       if (!updated.changes) throw new ApiError(409, '비밀번호가 이미 변경되었습니다. 다시 로그인해주세요.');
-      db.prepare('DELETE FROM sessions WHERE userId = ?').run(user.id);
-      db.prepare('DELETE FROM recoveryTokens WHERE userId = ?').run(user.id);
+      await db.prepare('DELETE FROM sessions WHERE userId = ?').run(user.id);
+      await db.prepare('DELETE FROM recoveryTokens WHERE userId = ?').run(user.id);
     });
-    endSession(db, req, res, secureCookies);
+    await endSession(db, req, res, secureCookies);
     res.json({ok: true});
   });
-  app.get('/api/members', (req, res) => {
-    requireMember(req);
-    const members = db
+  app.get('/api/members', async (req, res) => {
+    await requireMember(req);
+    const members = (await db
       .prepare(
-        "SELECT id,nickname,bio,location,gym,instagramUrl,grade,createdAt FROM users WHERE status='approved' ORDER BY createdAt ASC"
+        "SELECT u.id,u.fullName,u.nickname,u.bio,u.location,u.gym,u.grade,u.level,u.role,u.createdAt,COALESCE((SELECT SUM(l.amount) FROM pointLedger l WHERE l.userId=u.id),0) AS points FROM users u WHERE u.status='approved' ORDER BY u.nickname COLLATE NOCASE,u.id"
       )
-      .all() as unknown as MemberProfile[];
-    res.json({members: decorateMembers(db, members, currentQuarter(new Date()))});
+      .all()) as unknown as (MemberProfile & {role: User['role']; points: number})[];
+    res.json({members: await decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerGymComments(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerClimbingRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerMarketRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
-  registerMarketImageRoutes(app, uploadsDir, {member: requireMember, admin: requireAdmin, audit});
+  registerMarketImageRoutes(app, uploadsDir, {member: requireMember, admin: requireAdmin, audit}, imageStorage);
   registerProgressionRoutes(app, db, {user: requireUser, member: requireMember, admin: requireAdmin, audit});
-  app.get('/api/honors', (req, res) => {
-    requireMember(req);
-    res.json({honors: honors(false)});
+  app.get('/api/honors', async (req, res) => {
+    await requireMember(req);
+    res.json({honors: await honors(false)});
   });
-  app.get('/api/admin/honors', (req, res) => {
-    requireAdmin(req);
-    res.json({honors: honors(true)});
+  app.get('/api/admin/honors', async (req, res) => {
+    await requireAdmin(req);
+    res.json({honors: await honors(true)});
   });
-  app.get('/api/admin/users', (req, res) => {
-    requireAdmin(req);
-    res.json({users: db.prepare(`SELECT ${userColumns} FROM users ORDER BY createdAt DESC`).all()});
+  app.get('/api/admin/users', async (req, res) => {
+    await requireAdmin(req);
+    res.json({users: await db.prepare(`SELECT ${userColumns} FROM users ORDER BY createdAt DESC`).all()});
   });
-  app.patch('/api/admin/users/:id', (req, res) => {
-    const actor = requireAdmin(req);
+  app.patch('/api/admin/users/:id', async (req, res) => {
+    const actor = await requireAdmin(req);
     const input = z
       .object({
         status: z.enum(['pending', 'approved', 'rejected', 'suspended']),
-        role: z.enum(['member', 'admin']),
+        role: z.enum(['member', 'staff', 'admin']),
+        level: z
+          .union([z.number(), z.string().regex(/^\d+$/).transform(Number)])
+          .pipe(z.number().int().min(0).max(11))
+          .optional(),
         reason: z.string().trim().max(200),
       })
       .parse(req.body);
-    transaction(db, () => {
-      const target = db
+    await transaction(db, async () => {
+      await requireAdmin(req);
+      const target = (await db
         .prepare(`SELECT ${userColumns} FROM users WHERE id = ?`)
-        .get(String(req.params.id)) as unknown as User | undefined;
+        .get(String(req.params.id))) as unknown as User | undefined;
       if (!target) throw new ApiError(404, '회원을 찾을 수 없습니다.');
       if (input.role === 'admin' && input.status !== 'approved')
         throw new ApiError(400, '관리자는 활동 중 상태여야 합니다.');
@@ -258,90 +290,99 @@ export function createApp({
         target.status === 'approved' &&
         (input.role !== 'admin' || input.status !== 'approved')
       ) {
-        const count = db
+        const count = (await db
           .prepare("SELECT count(*) AS n FROM users WHERE role = 'admin' AND status = 'approved'")
-          .get() as {n: number};
+          .get()) as {n: number};
         if (count.n <= 1) throw new ApiError(409, '최소 한 명의 관리자가 필요합니다.');
       }
-      db.prepare('UPDATE users SET role = ?, status = ? WHERE id = ?').run(input.role, input.status, target.id);
+      await db
+        .prepare('UPDATE users SET role = ?, status = ?, level = ? WHERE id = ?')
+        .run(input.role, input.status, input.level ?? target.level ?? 0, target.id);
       if (input.status !== 'approved' || input.role !== target.role)
-        db.prepare('DELETE FROM sessions WHERE userId = ?').run(target.id);
-      audit(actor.id, target.id, 'membership.update', {
-        before: {role: target.role, status: target.status},
+        await db.prepare('DELETE FROM sessions WHERE userId = ?').run(target.id);
+      await audit(actor.id, target.id, 'membership.update', {
+        before: {role: target.role, status: target.status, level: target.level},
         after: input,
       });
     });
     res.json({ok: true});
   });
-  app.post('/api/admin/users/:id/recovery', (req, res) => {
-    const actor = requireAdmin(req);
+  app.post('/api/admin/users/:id/recovery', async (req, res) => {
+    const actor = await requireAdmin(req);
     const targetId = String(req.params.id);
-    if (!db.prepare('SELECT id FROM users WHERE id = ?').get(targetId))
+    if (!(await db.prepare('SELECT id FROM users WHERE id = ?').get(targetId)))
       throw new ApiError(404, '회원을 찾을 수 없습니다.');
     const token = randomBytes(24).toString('hex');
     const expiresAt = Date.now() + 30 * 60 * 1000;
-    transaction(db, () => {
-      db.prepare(
-        `INSERT INTO recoveryTokens (userId, tokenHash, expiresAt) VALUES (?, ?, ?)
+    await transaction(db, async () => {
+      await requireAdmin(req);
+      await db
+        .prepare(
+          `INSERT INTO recoveryTokens (userId, tokenHash, expiresAt) VALUES (?, ?, ?)
         ON CONFLICT(userId) DO UPDATE SET tokenHash = excluded.tokenHash, expiresAt = excluded.expiresAt`
-      ).run(targetId, hashToken(token), expiresAt);
-      audit(actor.id, targetId, 'password.recovery.issue', {});
+        )
+        .run(targetId, hashToken(token), expiresAt);
+      await audit(actor.id, targetId, 'password.recovery.issue', {});
     });
     res.status(201).json({token, expiresAt});
   });
   app.post('/api/auth/recover', async (req, res) => {
     const input = z.object({username, token: z.string().min(1).max(128), newPassword: password}).parse(req.body);
-    const target = db.prepare('SELECT id FROM users WHERE username = ?').get(input.username) as
+    const target = (await db.prepare('SELECT id FROM users WHERE username = ?').get(input.username)) as
       {id: string} | undefined;
     const tokenHash = hashToken(input.token);
     const recovery =
       target &&
-      db
+      (await db
         .prepare('SELECT userId FROM recoveryTokens WHERE userId = ? AND tokenHash = ? AND expiresAt > ?')
-        .get(target.id, tokenHash, Date.now());
+        .get(target.id, tokenHash, Date.now()));
     if (!target || !recovery) throw new ApiError(400, '복구 코드가 올바르지 않거나 만료되었습니다.');
     const nextHash = await hashPassword(input.newPassword);
-    transaction(db, () => {
-      const consumed = db
+    await transaction(db, async () => {
+      const consumed = await db
         .prepare('DELETE FROM recoveryTokens WHERE userId = ? AND tokenHash = ? AND expiresAt > ?')
         .run(target.id, tokenHash, Date.now());
       if (!consumed.changes) throw new ApiError(400, '복구 코드가 올바르지 않거나 만료되었습니다.');
-      db.prepare('UPDATE users SET passwordHash = ? WHERE id = ?').run(nextHash, target.id);
-      db.prepare('DELETE FROM sessions WHERE userId = ?').run(target.id);
+      await db.prepare('UPDATE users SET passwordHash = ? WHERE id = ?').run(nextHash, target.id);
+      await db.prepare('DELETE FROM sessions WHERE userId = ?').run(target.id);
     });
-    endSession(db, req, res, secureCookies);
+    await endSession(db, req, res, secureCookies);
     res.json({ok: true});
   });
-  app.post('/api/admin/honors', (req, res) => {
-    const actor = requireAdmin(req);
+  app.post('/api/admin/honors', async (req, res) => {
+    const actor = await requireAdmin(req);
     const input = honorSchema.parse(req.body);
-    if (!db.prepare("SELECT id FROM users WHERE id = ? AND status = 'approved'").get(input.userId))
+    if (!(await db.prepare("SELECT id FROM users WHERE id = ? AND status = 'approved'").get(input.userId)))
       throw new ApiError(400, '활동 중인 회원을 선택해주세요.');
     const id = randomUUID();
-    transaction(db, () => {
-      db.prepare(
-        `INSERT INTO honors (id, userId, title, description, kind, achievedAt, createdBy, createdAt)
+    await transaction(db, async () => {
+      await requireAdmin(req);
+      await db
+        .prepare(
+          `INSERT INTO honors (id, userId, title, description, kind, achievedAt, createdBy, createdAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(
-        id,
-        input.userId,
-        input.title,
-        input.description,
-        input.kind,
-        input.achievedAt,
-        actor.id,
-        new Date().toISOString()
-      );
-      audit(actor.id, id, 'honor.create', input);
+        )
+        .run(
+          id,
+          input.userId,
+          input.title,
+          input.description,
+          input.kind,
+          input.achievedAt,
+          actor.id,
+          new Date().toISOString()
+        );
+      await audit(actor.id, id, 'honor.create', input);
     });
-    res.status(201).json({honor: honors(false).find(honor => honor.id === id)});
+    res.status(201).json({honor: (await honors(false)).find(honor => honor.id === id)});
   });
-  app.delete('/api/admin/honors/:id', (req, res) => {
-    const actor = requireAdmin(req);
-    transaction(db, () => {
-      const removed = db.prepare('DELETE FROM honors WHERE id = ?').run(String(req.params.id));
+  app.delete('/api/admin/honors/:id', async (req, res) => {
+    const actor = await requireAdmin(req);
+    await transaction(db, async () => {
+      await requireAdmin(req);
+      const removed = await db.prepare('DELETE FROM honors WHERE id = ?').run(String(req.params.id));
       if (!removed.changes) throw new ApiError(404, '기록을 찾을 수 없습니다.');
-      audit(actor.id, String(req.params.id), 'honor.delete', {});
+      await audit(actor.id, String(req.params.id), 'honor.delete', {});
     });
     res.json({ok: true});
   });
@@ -359,7 +400,7 @@ export function createApp({
       error.type === 'entity.too.large' &&
       _req.path === '/api/admin/market/images'
     )
-      return void res.status(413).json({error: '이미지는 5MB 이하로 선택해주세요.'});
+      return void res.status(413).json({error: '이미지는 4MB 이하로 선택해주세요.'});
     if (
       error instanceof SyntaxError ||
       (typeof error === 'object' && error !== null && 'type' in error && error.type === 'entity.too.large')

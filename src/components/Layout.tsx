@@ -1,4 +1,18 @@
-import {ArrowUpRight, Menu, X} from 'lucide-react';
+import {hasManagementAccess} from '@/consts/roles';
+import {
+  ArrowUpRight,
+  Menu,
+  X,
+  Mountain,
+  Megaphone,
+  BookOpen,
+  MapPinned,
+  Trophy,
+  Users,
+  ShieldCheck,
+  UserRound,
+  LogIn,
+} from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useLocation} from 'react-router-dom';
 import {BrandLogo} from '@/components/BrandLogo';
@@ -7,10 +21,14 @@ import {useSession} from '@/hooks/useSession';
 export function Layout() {
   const {user} = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
-  const {pathname} = useLocation();
+  const {pathname, hash} = useLocation();
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [pathname]);
+    if (hash) {
+      document.getElementById(hash.slice(1))?.scrollIntoView();
+    } else {
+      window.scrollTo(0, 0);
+    }
+  }, [pathname, hash]);
   return (
     <>
       <a className="skip-link" href="#main">
@@ -39,24 +57,42 @@ export function Layout() {
             {user?.status === 'approved' && (
               <>
                 <NavLink to="/" end>
-                  베이스캠프
+                  <Mountain size={14} aria-hidden="true" /> 베이스캠프
                 </NavLink>
-                <NavLink to="/climbs">클라이밍 기록</NavLink>
-                <NavLink to="/notices">공지사항</NavLink>
-                <NavLink to="/market">포인트 마켓</NavLink>
-                <NavLink to="/members">멤버</NavLink>
-                <NavLink to="/hall-of-fame">명예의 전당</NavLink>
-                {user.role === 'admin' && <NavLink to="/admin">크루 관리</NavLink>}
-                <span className="nav-divider" />
+                <NavLink to="/notices">
+                  <Megaphone size={14} aria-hidden="true" /> 공지사항
+                </NavLink>
+                <NavLink to="/guide">
+                  <BookOpen size={14} aria-hidden="true" /> 이용 안내
+                </NavLink>
+                <span className="nav-group-divider" aria-hidden="true" />
+                <NavLink to="/gyms">
+                  <MapPinned size={14} aria-hidden="true" /> 암장지도
+                </NavLink>
+                <NavLink to="/achievements">
+                  <Trophy size={14} aria-hidden="true" /> 업적
+                </NavLink>
+                <span className="nav-group-divider" aria-hidden="true" />
+                <NavLink to="/members">
+                  <Users size={14} aria-hidden="true" /> 멤버
+                </NavLink>
+                {hasManagementAccess(user.role) && (
+                  <NavLink to="/admin">
+                    <ShieldCheck size={14} aria-hidden="true" /> 관리
+                  </NavLink>
+                )}
+                <span className="nav-divider" aria-hidden="true" />
               </>
             )}
             {user ? (
               <NavLink className="nav-account" to="/me">
-                <span className="mini-avatar">{user.nickname.slice(0, 1)}</span>내 정보
+                <UserRound size={15} aria-hidden="true" /> 내 정보
               </NavLink>
             ) : (
               <>
-                <NavLink to="/login">로그인</NavLink>
+                <NavLink to="/login">
+                  <LogIn size={14} aria-hidden="true" /> 로그인
+                </NavLink>
                 <Link className="button button-dark button-small" to="/signup">
                   회원 가입
                   <ArrowUpRight size={16} />

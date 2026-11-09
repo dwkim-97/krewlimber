@@ -15,7 +15,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
   const signup = mode === 'signup';
   const recovery = mode === 'recover';
   if (loading) return <Loading />;
-  if (user && !recovery) return <Navigate to="/me" replace />;
+  if (user && !recovery) return <Navigate to={user.status === 'approved' ? '/' : '/me'} replace />;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -26,13 +26,16 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
     try {
       const payload = recovery
         ? {username: form.get('username'), token: form.get('token'), newPassword: password}
-        : {username: form.get('username'), password, ...(signup ? {nickname: form.get('nickname')} : {})};
+        : {
+            username: form.get('username'),
+            password,
+            ...(signup ? {nickname: form.get('nickname'), fullName: form.get('fullName')} : {}),
+          };
       await api(`/auth/${recovery ? 'recover' : mode}`, {method: 'POST', body: JSON.stringify(payload)});
-      await refresh();
+      const nextUser = await refresh();
       if (recovery) setDone(true);
       else {
-        const from = (location.state as {from: string} | null)?.from;
-        navigate(signup ? '/me' : from?.startsWith('/') ? from : '/me', {replace: true});
+        navigate(signup || nextUser?.status !== 'approved' ? '/me' : '/', {replace: true});
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : '다시 시도해주세요.');
@@ -77,6 +80,12 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
             </label>
             {signup && (
               <label>
+                한글 이름
+                <input name="fullName" placeholder="홍길동" autoComplete="name" required minLength={2} maxLength={30} />
+              </label>
+            )}
+            {signup && (
+              <label>
                 닉네임
                 <input
                   name="nickname"
@@ -105,10 +114,10 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
               <input
                 name="password"
                 type="password"
-                placeholder={mode === 'login' ? '비밀번호를 입력해주세요' : '12자 이상의 비밀번호'}
+                placeholder={mode === 'login' ? '비밀번호를 입력해주세요' : '4자 이상의 비밀번호'}
                 autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 required
-                minLength={mode === 'login' ? 1 : 12}
+                minLength={mode === 'login' ? 1 : 4}
                 maxLength={128}
               />
             </label>
@@ -121,7 +130,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
                   placeholder="한 번 더 입력해주세요"
                   autoComplete="new-password"
                   required
-                  minLength={12}
+                  minLength={4}
                   maxLength={128}
                 />
               </label>

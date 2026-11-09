@@ -8,10 +8,11 @@ import {api} from '../src/apis/client';
 import type {User} from '../src/types';
 
 const approved: User = {
+  level: 0,
+  fullName: '홍길동',
   id: 'user-1',
   username: 'aiden.dw',
   nickname: '에이든',
-  instagramUrl: '',
   bio: '',
   location: '',
   gym: '',

@@ -51,8 +51,8 @@ export function ProductForm({
       event.currentTarget.value = '';
       return;
     }
-    if (file.size === 0 || file.size > 5 * 1024 * 1024) {
-      setError('이미지는 5MB 이하의 파일로 선택해주세요.');
+    if (file.size === 0 || file.size > 4 * 1024 * 1024) {
+      setError('이미지는 4MB 이하의 파일로 선택해주세요.');
       event.currentTarget.value = '';
       return;
     }
@@ -169,7 +169,7 @@ export function ProductForm({
                 accept="image/jpeg,image/png,image/webp"
                 onChange={selectImage}
               />
-              <small>JPG, PNG, WebP · 최대 5MB</small>
+              <small>JPG, PNG, WebP · 최대 4MB</small>
             </label>
             {preview && (
               <div className="product-image-preview">

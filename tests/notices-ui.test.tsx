@@ -8,12 +8,13 @@ import type {User} from '../src/types';
 import type {Notice} from '../src/types/boards';
 
 const user: User = {
+ level:0,
+  fullName: '홍길동',
   id: 'member',
   username: 'member',
   nickname: '크루',
   role: 'member',
   status: 'approved',
-  instagramUrl: '',
   bio: '',
   grade: '입문',
   location: '',

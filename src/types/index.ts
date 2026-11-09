@@ -1,10 +1,10 @@
-export type Role = 'member' | 'admin';
+export type Role = 'member' | 'staff' | 'admin';
 export type MemberStatus = 'pending' | 'approved' | 'rejected' | 'suspended';
 export type Grade = '입문' | 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 'V7' | 'V8+';
 export type HonorKind = 'send' | 'growth' | 'crew';
 
 export interface Profile {
-  instagramUrl: string;
+  fullName: string;
   nickname: string;
   bio: string;
   location: string;
@@ -13,6 +13,7 @@ export interface Profile {
 }
 
 export interface User extends Profile {
+  level: number;
   id: string;
   username: string;
   role: Role;
@@ -26,26 +27,36 @@ export interface MemberProfile extends Profile {
 }
 
 export interface Member extends MemberProfile {
+  role: Role;
+  points: number;
+  level: number;
   titles: TitleBadge[];
   featuredAchievement: FeaturedAchievement | null;
 }
 
-export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple' | 'gray';
+export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple';
 export type ActivityCounts = Record<ActivityMetric, number>;
-export type PointMetric = 'pointsEarned' | 'pointsSpent';
-export type ProgressMetric = ActivityMetric | PointMetric;
-export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple' | 'gray';
+export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple';
 
-export interface MetricDefinition<T extends ProgressMetric = ProgressMetric> {
-  id: T;
+export interface MetricDefinition {
+  id: ActivityMetric;
   label: string;
-  unit: '회' | '개' | 'P';
+  unit: '회' | '개';
+}
+export interface AchievementCondition {
+  gymId: string;
+  gradeId: string;
+  gymName: string;
+  gradeName: string;
+  operator: 'eq' | 'gte';
+  difficultyRank: number;
 }
 export interface AchievementDefinition {
+  condition?: AchievementCondition;
   id: string;
   name: string;
   description: string;
-  metric: ProgressMetric;
+  metric: ActivityMetric;
   target: number;
 }
 export interface AchievementProgress extends AchievementDefinition {
@@ -79,8 +90,8 @@ export interface TitleCategory {
   id: string;
   name: string;
   description: string;
-  metric: ProgressMetric;
-  unit: '회' | '개' | 'P';
+  metric: ActivityMetric;
+  unit: '회' | '개';
   accent: Accent;
   standings: TitleStanding[];
 }
@@ -99,8 +110,7 @@ export interface ActivityMember {
 export interface AdminProgression {
   quarter: string;
   quarters: string[];
-  metrics: MetricDefinition<ActivityMetric>[];
-  achievementMetrics: MetricDefinition[];
+  metrics: MetricDefinition[];
   users: ActivityMember[];
   achievements: AchievementDefinition[];
 }

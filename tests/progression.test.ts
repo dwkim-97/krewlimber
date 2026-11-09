@@ -11,24 +11,24 @@ import {
   getAchievements,
   getTitleBoard,
   decorateMembers,
+  setActivityCounts,
   setFeaturedAchievement,
 } from '../server/progression';
-import {setVisitFixture} from './climbing-fixtures';
 import type {ActivityCounts, MemberProfile} from '../src/types';
 
 const password = 'progression test passphrase';
 const origin = 'http://localhost:4173';
-const zero: ActivityCounts = {participation: 0, hosted: 0, attended: 0, red: 0, pink: 0, purple: 0, gray: 0};
+const zero: ActivityCounts = {participation: 0, hosted: 0, attended: 0, red: 0, pink: 0, purple: 0};
 let db: ReturnType<typeof openDatabase>;
 beforeEach(() => {
   db = openDatabase(':memory:');
 });
 afterEach(() => db.close());
 async function member(username: string, status: 'approved' | 'pending' | 'suspended' = 'approved') {
-  return createAccount(db, {username, password, nickname: username, role: 'member', status});
+  return await createAccount(db, {username, password, nickname: username, role: 'member', status});
 }
-function record(id: string, quarter: string, counts: ActivityCounts) {
-  transaction(db, () => setVisitFixture(db, id, quarter, counts));
+async function record(id: string, quarter: string, counts: ActivityCounts) {
+  await transaction(db, async () => await setActivityCounts(db, id, quarter, counts));
 }
 
 describe('quarterly titles', () => {
@@ -41,11 +41,11 @@ describe('quarterly titles', () => {
     const b = await member('climber.b');
     const c = await member('climber.c');
     const inactive = await member('inactive', 'suspended');
-    record(a.id, '2026-Q4', {...zero, participation: 20, red: 50});
-    record(b.id, '2026-Q4', {...zero, participation: 20, hosted: 8});
-    record(c.id, '2026-Q4', {...zero, participation: 4});
-    record(inactive.id, '2026-Q4', {...zero, participation: 25, red: 999});
-    const board = getTitleBoard(db, '2026-Q4');
+    await record(a.id, '2026-Q4', {...zero, participation: 20, red: 50});
+    await record(b.id, '2026-Q4', {...zero, participation: 20, hosted: 8});
+    await record(c.id, '2026-Q4', {...zero, participation: 4});
+    await record(inactive.id, '2026-Q4', {...zero, participation: 999, red: 999});
+    const board = await getTitleBoard(db, '2026-Q4');
     expect(
       board.categories.find(x => x.id === 'participation')!.standings.map(x => [x.nickname, x.rank, x.value])
     ).toEqual([
@@ -54,50 +54,52 @@ describe('quarterly titles', () => {
       ['climber.c', 3, 4],
     ]);
     expect(board.categories.find(x => x.id === 'purple')!.standings).toEqual([]);
-    expect(getTitleBoard(db, '2026-Q3').categories.every(x => x.standings.length === 0)).toBe(true);
+    expect((await getTitleBoard(db, '2026-Q3')).categories.every(x => x.standings.length === 0)).toBe(true);
   });
 });
 
 describe('achievements', () => {
   it('sums lifetime activity and permits only earned featured achievements', async () => {
     const user = await member('climber');
-    record(user.id, '2026-Q3', {...zero, red: 24});
-    record(user.id, '2026-Q4', {...zero, red: 25});
-    expect(getAchievements(db, user.id).achievements.find(x => x.id === 'theclimb-red-50')).toMatchObject({
+    await record(user.id, '2026-Q3', {...zero, red: 24});
+    await record(user.id, '2026-Q4', {...zero, red: 25});
+    expect((await getAchievements(db, user.id)).achievements.find(x => x.id === 'theclimb-red-50')).toMatchObject({
       progress: 49,
       earned: false,
       featured: false,
     });
-    expect(() => setFeaturedAchievement(db, user.id, 'theclimb-red-50')).toThrow();
-    record(user.id, '2026-Q4', {...zero, red: 26});
-    setFeaturedAchievement(db, user.id, 'theclimb-red-50');
-    expect(getAchievements(db, user.id).achievements.find(x => x.id === 'theclimb-red-50')).toMatchObject({
+    await expect(setFeaturedAchievement(db, user.id, 'theclimb-red-50')).rejects.toThrow();
+    await record(user.id, '2026-Q4', {...zero, red: 26});
+    await setFeaturedAchievement(db, user.id, 'theclimb-red-50');
+    expect((await getAchievements(db, user.id)).achievements.find(x => x.id === 'theclimb-red-50')).toMatchObject({
       progress: 50,
       earned: true,
       featured: true,
     });
-    expect(getAchievements(db, user.id).achievements.find(x => x.id === 'theclimb-red-100')!.earned).toBe(false);
-    setFeaturedAchievement(db, user.id, null);
-    expect(getAchievements(db, user.id).featuredAchievementId).toBeNull();
+    expect((await getAchievements(db, user.id)).achievements.find(x => x.id === 'theclimb-red-100')!.earned).toBe(
+      false
+    );
+    await setFeaturedAchievement(db, user.id, null);
+    expect((await getAchievements(db, user.id)).featuredAchievementId).toBeNull();
   });
   it('clears a selection when records are corrected below the requirement', async () => {
     const user = await member('climber');
-    record(user.id, '2026-Q4', {...zero, red: 50});
-    setFeaturedAchievement(db, user.id, 'theclimb-red-50');
-    record(user.id, '2026-Q4', {...zero, red: 49});
-    expect(getAchievements(db, user.id).featuredAchievementId).toBeNull();
-    record(user.id, '2026-Q4', {...zero, red: 50});
-    expect(getAchievements(db, user.id).featuredAchievementId).toBeNull();
+    await record(user.id, '2026-Q4', {...zero, red: 50});
+    await setFeaturedAchievement(db, user.id, 'theclimb-red-50');
+    await record(user.id, '2026-Q4', {...zero, red: 49});
+    expect((await getAchievements(db, user.id)).featuredAchievementId).toBeNull();
+    await record(user.id, '2026-Q4', {...zero, red: 50});
+    expect((await getAchievements(db, user.id)).featuredAchievementId).toBeNull();
   });
   it('decorates members with current titles and the same saved featured achievement', async () => {
     const user = await member('climber');
     const quarter = currentQuarter(new Date());
-    record(user.id, quarter, {...zero, participation: 10, red: 50});
-    setFeaturedAchievement(db, user.id, 'theclimb-red-50');
-    const base = db
-      .prepare('SELECT id,nickname,bio,location,gym,instagramUrl,grade,createdAt FROM users WHERE id=?')
-      .all(user.id) as unknown as MemberProfile[];
-    const [decorated] = decorateMembers(db, base, quarter);
+    await record(user.id, quarter, {...zero, participation: 10, red: 50});
+    await setFeaturedAchievement(db, user.id, 'theclimb-red-50');
+    const base = (await db
+      .prepare('SELECT id,nickname,bio,location,gym,grade,createdAt FROM users WHERE id=?')
+      .all(user.id)) as unknown as MemberProfile[];
+    const [decorated] = await decorateMembers(db, base, quarter);
     expect(decorated.featuredAchievement).toMatchObject({id: 'theclimb-red-50', name: '적색경보 해제'});
     expect(decorated.titles.map(x => x.id)).toEqual(['participation', 'red']);
     expect(decorated.titles[0]).toMatchObject({description: '클라이밍 참여 횟수 1위', quarter});
@@ -107,25 +109,25 @@ describe('achievements', () => {
     const file = join(directory, 'test.sqlite');
     try {
       let persistent = openDatabase(file);
-      persistent
+      await persistent
         .prepare(
           "INSERT INTO users(id,username,passwordHash,nickname,role,status,createdAt) VALUES('old','old.user','old-hash','기존회원','member','approved','2026-01-01')"
         )
         .run();
       persistent.exec(
-        'DROP TABLE pointLedger; DROP TABLE marketOrders; DROP TABLE marketProducts; DROP TABLE notices; DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; DROP TABLE climbingColors;DROP TABLE climbingVisits;DROP TABLE climbingGyms;ALTER TABLE users DROP COLUMN instagramUrl;PRAGMA user_version=1;'
+        'DROP TABLE pointLedger; DROP TABLE marketOrders; DROP TABLE marketProducts; DROP TABLE notices; DROP TABLE featuredAchievements; DROP TABLE activityStats; DROP TABLE achievementDefinitions; PRAGMA user_version=1;'
       );
       persistent.close();
       persistent = openDatabase(file);
-      expect(persistent.prepare("SELECT nickname FROM users WHERE id='old'").get()).toMatchObject({
+      expect(await persistent.prepare("SELECT nickname FROM users WHERE id='old'").get()).toMatchObject({
         nickname: '기존회원',
       });
-      expect(persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 15});
-      persistent.prepare("DELETE FROM achievementDefinitions WHERE id='theclimb-red-50'").run();
+      expect(await persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 8});
+      await persistent.prepare("DELETE FROM achievementDefinitions WHERE id='theclimb-red-50'").run();
       persistent.close();
       persistent = openDatabase(file);
       expect(
-        persistent.prepare("SELECT id FROM achievementDefinitions WHERE id='theclimb-red-50'").get()
+        await persistent.prepare("SELECT id FROM achievementDefinitions WHERE id='theclimb-red-50'").get()
       ).toBeUndefined();
       persistent.close();
     } finally {
@@ -179,7 +181,6 @@ describe('progression API', () => {
           .send({quarter: '2026-Q4', counts: {...zero, red: 50}})
       ).status
     ).toBe(200);
-    record(user.id, '2026-Q4', {...zero, red: 50});
     expect(
       (
         await regular.agent
@@ -200,17 +201,9 @@ describe('progression API', () => {
       (await regular.agent.get('/api/members')).body.members.find((x: {id: string}) => x.id === user.id)
         .featuredAchievement.name
     ).toBe('적색경보 해제');
-    const definition = {name: '빨강 맛보기', description: '[더클라임] 빨강 문제 10개 완등', metric: 'red', target: 10};
-    expect((await regular.agent.post('/api/admin/achievements').set('Origin', origin).send(definition)).status).toBe(
-      403
-    );
-    const created = await admin.agent.post('/api/admin/achievements').set('Origin', origin).send(definition);
-    expect(created.status).toBe(201);
-    expect(
-      (await regular.agent.get('/api/me/achievements')).body.achievements.find(
-        (x: {id: string}) => x.id === created.body.achievement.id
-      ).earned
-    ).toBe(true);
+    const definition = {name: '추가 불가', description: '추가 불가', metric: 'red', target: 10};
+    for (const agent of [regular.agent, admin.agent])
+      expect((await agent.post('/api/admin/achievements').set('Origin', origin).send(definition)).status).toBe(404);
     expect((await admin.agent.delete('/api/admin/achievements/theclimb-red-50').set('Origin', origin)).status).toBe(
       200
     );
@@ -227,22 +220,4 @@ describe('progression API', () => {
         .status
     ).toBe(400);
   });
-});
-
-it('renames the purple title and awards a quarterly gray title to all positive active leaders', async () => {
-  const a = await member('gray.a');
-  const b = await member('gray.b');
-  const inactive = await member('gray.inactive', 'suspended');
-  record(a.id, '2026-Q4', {...zero, gray: 5});
-  record(b.id, '2026-Q4', {...zero, gray: 5});
-  record(inactive.id, '2026-Q4', {...zero, gray: 999});
-  record(a.id, '2026-Q3', {...zero, gray: 99});
-  const board = getTitleBoard(db, '2026-Q4');
-  expect(board.categories.find(x => x.id === 'purple')!.name).toBe('보라 클래스');
-  const title = board.categories.find(x => x.id === 'gray')!;
-  expect(title.name).toBe('세계관 최강자');
-  expect(title.standings.map(x => [x.userId, x.value, x.rank])).toEqual([
-    [a.id, 5, 1],
-    [b.id, 5, 1],
-  ]);
 });

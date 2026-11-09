@@ -1,12 +1,11 @@
 import {existsSync, realpathSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {basename, dirname, resolve} from 'node:path';
-import type {DatabaseSync} from 'node:sqlite';
+import type {Database} from './database';
 import type {ActivityCounts, Grade, MemberStatus, Role} from '../src/types';
 import {EMPTY_COUNTS} from '../src/consts/progression';
 import {createAccount} from './auth';
-import {seedDemoVisitCounts} from './demo-climbs';
-import {transaction} from './db';
+import {transaction} from './database';
 import {currentQuarter, getAchievements, setActivityCounts, setFeaturedAchievement} from './progression';
 
 export const DEMO_PASSWORD = 'Krew-Test-2026!';
@@ -27,8 +26,8 @@ const fixtures: DemoUser[] = [
     role: 'admin',
     status: 'approved',
     grade: 'V4',
-    current: {participation: 18, hosted: 12, attended: 20, red: 60, pink: 45, purple: 26, gray: 0},
-    previous: {participation: 20, hosted: 20, attended: 35, red: 80, pink: 25, purple: 30, gray: 0},
+    current: {participation: 18, hosted: 12, attended: 20, red: 60, pink: 45, purple: 26},
+    previous: {participation: 20, hosted: 20, attended: 35, red: 80, pink: 25, purple: 30},
     featured: 'theclimb-purple-50',
   },
   {
@@ -37,8 +36,8 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V6',
-    current: {participation: 64, hosted: 16, attended: 54, red: 95, pink: 110, purple: 83, gray: 3},
-    previous: {participation: 40, hosted: 40, attended: 20, red: 20, pink: 20, purple: 20, gray: 0},
+    current: {participation: 64, hosted: 16, attended: 54, red: 95, pink: 110, purple: 83},
+    previous: {participation: 40, hosted: 40, attended: 20, red: 20, pink: 20, purple: 20},
     featured: 'theclimb-pink-100',
   },
   {
@@ -47,7 +46,7 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V5',
-    current: {participation: 30, hosted: 3, attended: 20, red: 120, pink: 18, purple: 4, gray: 1},
+    current: {participation: 30, hosted: 3, attended: 20, red: 120, pink: 18, purple: 4},
     previous: {...EMPTY_COUNTS, red: 50},
     featured: 'theclimb-red-100',
   },
@@ -57,7 +56,7 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V3',
-    current: {participation: 20, hosted: 51, attended: 12, red: 10, pink: 12, purple: 1, gray: 0},
+    current: {participation: 20, hosted: 51, attended: 12, red: 10, pink: 12, purple: 1},
     previous: {...EMPTY_COUNTS, hosted: 4},
     featured: 'krew-hosted-50',
   },
@@ -67,8 +66,8 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V5',
-    current: {participation: 45, hosted: 7, attended: 45, red: 50, pink: 50, purple: 83, gray: 3},
-    previous: {...EMPTY_COUNTS, attended: 15, purple: 5, gray: 0},
+    current: {participation: 45, hosted: 7, attended: 45, red: 50, pink: 50, purple: 83},
+    previous: {...EMPTY_COUNTS, attended: 15, purple: 5},
     featured: 'theclimb-purple-50',
   },
   {
@@ -77,7 +76,7 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V2',
-    current: {participation: 14, hosted: 3, attended: 14, red: 30, pink: 5, purple: 0, gray: 0},
+    current: {participation: 14, hosted: 3, attended: 14, red: 30, pink: 5, purple: 0},
     previous: {...EMPTY_COUNTS, participation: 20, red: 30, attended: 20},
     featured: 'theclimb-red-50',
   },
@@ -87,7 +86,7 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'approved',
     grade: 'V3',
-    current: {participation: 10, hosted: 0, attended: 20, red: 60, pink: 20, purple: 4, gray: 0},
+    current: {participation: 10, hosted: 0, attended: 20, red: 60, pink: 20, purple: 4},
     previous: {...EMPTY_COUNTS, attended: 40, red: 50},
     featured: null,
   },
@@ -117,7 +116,7 @@ const fixtures: DemoUser[] = [
     role: 'member',
     status: 'suspended',
     grade: 'V7',
-    current: {participation: 999, hosted: 999, attended: 999, red: 999, pink: 999, purple: 999, gray: 999},
+    current: {participation: 999, hosted: 999, attended: 999, red: 999, pink: 999, purple: 999},
     previous: {...EMPTY_COUNTS},
     featured: null,
   },
@@ -137,12 +136,12 @@ export function assertDemoDatabase(path: string, environment: 'development' | 'p
     throw new Error('Database symlinks are not allowed.');
 }
 
-export async function seedDemoUsers(db: DatabaseSync) {
+export async function seedDemoUsers(db: Database) {
   const quarter = currentQuarter(new Date());
   const [year, part] = quarter.split('-Q');
   const previous = Number(part) === 1 ? `${Number(year) - 1}-Q4` : `${year}-Q${Number(part) - 1}`;
   for (const fixture of fixtures) {
-    const existing = db.prepare('SELECT id FROM users WHERE username=?').get(fixture.username) as
+    const existing = (await db.prepare('SELECT id FROM users WHERE username=?').get(fixture.username)) as
       {id: string} | undefined;
     const user =
       existing ??
@@ -153,25 +152,25 @@ export async function seedDemoUsers(db: DatabaseSync) {
         role: fixture.role,
         status: fixture.status,
       }));
-    transaction(db, () => {
-      db.prepare('UPDATE users SET nickname=?,grade=?,bio=?,location=?,gym=? WHERE id=?').run(
-        fixture.nickname,
-        fixture.grade,
-        '화면 확인용 테스트 유저입니다.',
-        '테스트 지역',
-        '더클라임 · 테스트',
-        user.id
-      );
-      seedDemoVisitCounts(db, user.id, previous, fixture.previous);
-      seedDemoVisitCounts(db, user.id, quarter, fixture.current);
-      setActivityCounts(db, user.id, previous, fixture.previous);
-      setActivityCounts(db, user.id, quarter, fixture.current);
+    await transaction(db, async () => {
+      await db
+        .prepare('UPDATE users SET nickname=?,grade=?,bio=?,location=?,gym=? WHERE id=?')
+        .run(
+          fixture.nickname,
+          fixture.grade,
+          '화면 확인용 테스트 유저입니다.',
+          '테스트 지역',
+          '더클라임 · 테스트',
+          user.id
+        );
+      await setActivityCounts(db, user.id, previous, fixture.previous);
+      await setActivityCounts(db, user.id, quarter, fixture.current);
       if (
         fixture.featured &&
-        getAchievements(db, user.id).achievements.some(item => item.id === fixture.featured && item.earned)
+        (await getAchievements(db, user.id)).achievements.some(item => item.id === fixture.featured && item.earned)
       )
-        setFeaturedAchievement(db, user.id, fixture.featured);
-      else if (fixture.featured === null) setFeaturedAchievement(db, user.id, null);
+        await setFeaturedAchievement(db, user.id, fixture.featured);
+      else if (fixture.featured === null) await setFeaturedAchievement(db, user.id, null);
     });
   }
   return {users: fixtures.length, quarter};

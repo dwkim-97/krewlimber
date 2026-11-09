@@ -1644,10 +1644,6 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   --accent: #7759a6;
   --accent-bg: #eee4f8;
 }
-.accent-gray {
-  --accent: #68717d;
-  --accent-bg: #e7eaf0;
-}
 .title-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2566,7 +2562,7 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
 }
 
-@media (min-width: 821px) and (max-width: 1100px) {
+@media (min-width: 821px) and (max-width: 1380px) {
   .menu-toggle {
     display: grid;
     place-items: center;
@@ -2673,31 +2669,8 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   }
 }
 
-.admin-achievement-list article > div {
-  min-width: 0;
-  flex: 1;
-}
-.achievement-goal-editor {
-  margin-top: 14px;
-}
-.achievement-goal-editor summary {
-  cursor: pointer;
-  font-size: 11px;
+.member-real-name {
   color: var(--muted);
-}
-.achievement-goal-editor form {
-  margin-top: 16px;
-}
-
-.member-instagram {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  color: var(--muted);
-  font-size: 12px;
-  overflow-wrap: anywhere;
-}
-.member-instagram:hover {
-  color: var(--ink);
+  font-size: 0.875rem;
+  font-weight: 500;
 }

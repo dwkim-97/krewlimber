@@ -1,3 +1,4 @@
+import {hasManagementAccess} from '@/consts/roles';
 import {useState, type FormEvent} from 'react';
 import {ChevronLeft, ChevronRight, Pin, Plus, Search} from 'lucide-react';
 import {Link, useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -29,7 +30,7 @@ export function Notices() {
   return (
     <div className="page-shell notices-page">
       <PageHeading title="공지사항">
-        {user?.role === 'admin' && (
+        {hasManagementAccess(user?.role) && (
           <Link className="button button-dark button-small" to="/notices/new">
             <Plus size={16} />
             공지 작성
@@ -195,7 +196,7 @@ function NoticeContent({id}: {id: string}) {
           </header>
           <div className="notice-body">{notice.body}</div>
           {error && <ErrorNotice message={error} retry={null} />}
-          {user?.role === 'admin' && (
+          {hasManagementAccess(user?.role) && (
             <div className="notice-actions">
               <Link className="button button-outline button-small" to={`/notices/${id}/edit`}>
                 수정
@@ -214,7 +215,7 @@ function NoticeContent({id}: {id: string}) {
 export function NoticeEditor() {
   const {id} = useParams();
   const {user} = useSession();
-  if (user?.role !== 'admin')
+  if (!hasManagementAccess(user?.role))
     return (
       <div className="page-shell">
         <ErrorNotice message="관리자 권한이 필요합니다." retry={null} />
