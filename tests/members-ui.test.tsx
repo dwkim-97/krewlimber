@@ -14,6 +14,7 @@ it('groups leaders above compact member cards and preserves filtering and badges
     points: 120,
 
     level: 0,
+    instagramUrl: '',
     fullName: '홍길동',
     id: 'a',
     nickname: '크루 하나',

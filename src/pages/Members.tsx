@@ -1,4 +1,4 @@
-import {Award, Coins, Layers, MapPin, Search, ShieldCheck, Users} from 'lucide-react';
+import {Award, Coins, Camera, Layers, MapPin, Search, ShieldCheck, Users} from 'lucide-react';
 import {useState} from 'react';
 import {Avatar, EmptyState, ErrorNotice, Loading, PageHeading} from '@/components/ui';
 import {InfoButton} from '@/components/InfoButton';
@@ -105,6 +105,17 @@ function MemberGroup({title, members, leadership = false}: {title: string; membe
                   <MapPin size={11} aria-hidden="true" />
                   {m.gym || m.location}
                 </span>
+              )}
+              {m.instagramUrl && (
+                <a
+                  className="member-instagram"
+                  href={m.instagramUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${m.nickname} 인스타그램 프로필 열기`}
+                >
+                  <Camera size={14} aria-hidden="true" />
+                </a>
               )}
             </div>
             <dl className="member-card-stats">

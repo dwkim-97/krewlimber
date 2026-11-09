@@ -125,6 +125,7 @@ it('clears the previous account achievements when the active session changes', a
   );
   const user: User = {
     level: 0,
+    instagramUrl: '',
     fullName: '홍길동',
     id: 'a',
     username: 'account.a',

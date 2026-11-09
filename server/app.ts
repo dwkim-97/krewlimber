@@ -30,10 +30,17 @@ import {registerNoticeRoutes} from './notice-routes';
 import {registerMarketRoutes} from './market-routes';
 import type {ImageStorage} from './image-storage';
 import {registerMarketImageRoutes} from './market-images';
-import {usernameSchema as username, passwordSchema as password, nicknameSchema, fullNameSchema} from './validation';
+import {
+  usernameSchema as username,
+  passwordSchema as password,
+  nicknameSchema,
+  fullNameSchema,
+  instagramSchema,
+} from './validation';
 
 const profileSchema = z.object({
   fullName: fullNameSchema.optional(),
+  instagramUrl: instagramSchema.optional(),
   nickname: nicknameSchema,
   bio: z.string().trim().max(200),
   location: z.string().trim().max(30),
@@ -212,8 +219,19 @@ export function createApp({
     const user = await requireUser(req);
     const input = profileSchema.parse(req.body);
     await db
-      .prepare('UPDATE users SET nickname = ?, fullName = ?, bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?')
-      .run(input.nickname, input.fullName ?? user.fullName, input.bio, input.location, input.gym, input.grade, user.id);
+      .prepare(
+        'UPDATE users SET nickname = ?, fullName = ?, instagramUrl = COALESCE(?, instagramUrl), bio = ?, location = ?, gym = ?, grade = ? WHERE id = ?'
+      )
+      .run(
+        input.nickname,
+        input.fullName ?? user.fullName,
+        input.instagramUrl ?? null,
+        input.bio,
+        input.location,
+        input.gym,
+        input.grade,
+        user.id
+      );
     res.json({user: await db.prepare(`SELECT ${userColumns} FROM users WHERE id = ?`).get(user.id)});
   });
   app.patch('/api/me/password', async (req, res) => {
@@ -241,7 +259,7 @@ export function createApp({
     await requireMember(req);
     const members = (await db
       .prepare(
-        "SELECT u.id,u.fullName,u.nickname,u.bio,u.location,u.gym,u.grade,u.level,u.role,u.createdAt,COALESCE((SELECT SUM(l.amount) FROM pointLedger l WHERE l.userId=u.id),0) AS points FROM users u WHERE u.status='approved' ORDER BY u.nickname COLLATE NOCASE,u.id"
+        "SELECT u.id,u.fullName,u.nickname,u.instagramUrl,u.bio,u.location,u.gym,u.grade,u.level,u.role,u.createdAt,COALESCE((SELECT SUM(l.amount) FROM pointLedger l WHERE l.userId=u.id),0) AS points FROM users u WHERE u.status='approved' ORDER BY u.nickname COLLATE NOCASE,u.id"
       )
       .all()) as unknown as (MemberProfile & {role: User['role']; points: number})[];
     res.json({members: await decorateMembers(db, members, currentQuarter(new Date()))});

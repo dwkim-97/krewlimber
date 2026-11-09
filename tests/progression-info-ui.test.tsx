@@ -59,6 +59,7 @@ it('explains a member title quarter and featured achievement condition', async (
     points: 120,
 
     level: 0,
+    instagramUrl: '',
     fullName: '홍길동',
     id: 'a',
     nickname: '에이든',

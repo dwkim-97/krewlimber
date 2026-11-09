@@ -1,8 +1,20 @@
-import {ChevronDown, Crown, Flame, Mountain, Sparkles, Zap} from 'lucide-react';
+import {ChevronDown, Coins, Crown, Flame, Mountain, Sparkles, Zap} from 'lucide-react';
 import {useState} from 'react';
 import {InfoButton} from '@/components/InfoButton';
-import type {TitleBadge, TitleCategory} from '@/types';
+import type {ProgressMetric, TitleBadge, TitleCategory} from '@/types';
 import {quarterLabel} from '@/consts/progression';
+
+const titleIcons: Record<ProgressMetric, typeof Flame> = {
+  participation: Mountain,
+  hosted: Zap,
+  attended: Zap,
+  red: Flame,
+  pink: Flame,
+  purple: Flame,
+  gray: Crown,
+  pointsEarned: Coins,
+  pointsSpent: Coins,
+};
 
 function TitleConditions({description, quarter}: {description: string; quarter: string | null}) {
   return (
@@ -35,7 +47,7 @@ export function TitleList({categories}: {categories: TitleCategory[]}) {
     <div className="title-list">
       {categories.map(category => {
         const leaders = category.standings.filter(person => person.rank === 1);
-        const Icon = category.id === 'hosted' ? Zap : category.id === 'participation' ? Mountain : Flame;
+        const Icon = titleIcons[category.metric];
         const open = expanded === category.id;
         return (
           <article className={`title-tile accent-${category.accent}`} key={category.id}>

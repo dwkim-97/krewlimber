@@ -23,12 +23,12 @@ it('migrates v2 without changing existing accounts, sessions or achievement defi
     );
     db.close();
     db = openDatabase(file);
-    expect((await db.prepare('PRAGMA user_version').get())!.user_version).toBe(6);
+    expect((await db.prepare('PRAGMA user_version').get())!.user_version).toBe(7);
     expect((await db.prepare("SELECT passwordHash FROM users WHERE id='existing'").get())!.passwordHash).toBe(
       'old-hash'
     );
     expect((await db.prepare('SELECT count(*) AS n FROM sessions').get())!.n).toBe(1);
-    expect((await db.prepare('SELECT count(*) AS n FROM achievementDefinitions').get())!.n).toBe(7);
+    expect((await db.prepare('SELECT count(*) AS n FROM achievementDefinitions').get())!.n).toBe(14);
     expect((await db.prepare('SELECT count(*) AS n FROM marketProducts').get())!.n).toBe(0);
     db.close();
   } finally {

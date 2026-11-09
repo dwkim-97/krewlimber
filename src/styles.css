@@ -1644,6 +1644,10 @@ form input:invalid:not(:placeholder-shown):not(:focus) {
   --accent: #7759a6;
   --accent-bg: #eee4f8;
 }
+.accent-gray {
+  --accent: #68717d;
+  --accent-bg: #e7eaf0;
+}
 .title-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
