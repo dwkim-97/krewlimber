@@ -30,6 +30,7 @@ it('opens the record form from the profile menu with one page heading', async ()
     id: 'test',
     username: 'test',
     nickname: '테스트',
+    instagramUrl: '',
     fullName: '홍길동',
     role: 'member' as const,
     status: 'approved' as const,

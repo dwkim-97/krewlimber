@@ -4,6 +4,7 @@ export type Grade = '입문' | 'V0' | 'V1' | 'V2' | 'V3' | 'V4' | 'V5' | 'V6' | 
 export type HonorKind = 'send' | 'growth' | 'crew';
 
 export interface Profile {
+  instagramUrl: string;
   fullName: string;
   nickname: string;
   bio: string;
@@ -36,7 +37,9 @@ export interface Member extends MemberProfile {
 
 export type ActivityMetric = 'participation' | 'hosted' | 'attended' | 'red' | 'pink' | 'purple';
 export type ActivityCounts = Record<ActivityMetric, number>;
-export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple';
+export type ProgressMetric = ActivityMetric | 'gray' | 'pointsEarned' | 'pointsSpent';
+export type ProgressCounts = Record<ProgressMetric, number>;
+export type Accent = 'lime' | 'yellow' | 'red' | 'pink' | 'purple' | 'gray';
 
 export interface MetricDefinition {
   id: ActivityMetric;
@@ -56,7 +59,7 @@ export interface AchievementDefinition {
   id: string;
   name: string;
   description: string;
-  metric: ActivityMetric;
+  metric: ProgressMetric;
   target: number;
 }
 export interface AchievementProgress extends AchievementDefinition {
@@ -90,8 +93,8 @@ export interface TitleCategory {
   id: string;
   name: string;
   description: string;
-  metric: ActivityMetric;
-  unit: '회' | '개';
+  metric: ProgressMetric;
+  unit: '회' | '개' | 'P';
   accent: Accent;
   standings: TitleStanding[];
 }

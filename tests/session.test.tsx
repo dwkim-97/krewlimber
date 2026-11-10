@@ -9,6 +9,7 @@ import type {User} from '../src/types';
 
 const approved: User = {
   level: 0,
+  instagramUrl: '',
   fullName: '홍길동',
   id: 'user-1',
   username: 'aiden.dw',

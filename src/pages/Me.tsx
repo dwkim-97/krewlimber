@@ -1,5 +1,5 @@
 import {ROLE_LABELS} from '@/consts/roles';
-import {Check, Clock3, KeyRound, LogOut, ShieldCheck, Mountain, UserRound, Award} from 'lucide-react';
+import {Check, Clock3, KeyRound, LogOut, ShieldCheck, Mountain, UserRound, Award, Camera} from 'lucide-react';
 import {useState, type FormEvent} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import {Climbing} from '@/pages/Climbing';
@@ -89,6 +89,17 @@ export function Me() {
           <Avatar name={user.nickname} index={0} />
           <h2>{user.nickname}</h2>
           <p className="username">@{user.username}</p>
+          {user.instagramUrl && (
+            <a
+              href={user.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-button"
+              aria-label="내 인스타그램 프로필 열기"
+            >
+              <Camera size={15} aria-hidden="true" /> 인스타그램
+            </a>
+          )}
           <span className={`status-tag status-${user.status}`}>
             {approved ? <ShieldCheck size={14} /> : <Clock3 size={14} />}
             {STATUS_LABELS[user.status]}
@@ -152,7 +163,7 @@ export function Me() {
                 <div className="panel-title">
                   <h2>프로필</h2>
                 </div>
-                <form onSubmit={saveProfile} key={`${user.id}-${user.nickname}-${user.grade}`}>
+                <form onSubmit={saveProfile} key={`${user.id}-${user.nickname}-${user.grade}-${user.instagramUrl}`}>
                   <div className="form-grid">
                     <label>
                       한글 이름
@@ -184,6 +195,17 @@ export function Me() {
                           <option key={grade}>{grade}</option>
                         ))}
                       </select>
+                    </label>
+                    <label>
+                      인스타그램
+                      <input
+                        name="instagramUrl"
+                        defaultValue={user.instagramUrl}
+                        placeholder="클라이밍 인스타 계정"
+                        maxLength={200}
+                        autoCapitalize="none"
+                        spellCheck={false}
+                      />
                     </label>
                     <label>
                       주 활동 지역

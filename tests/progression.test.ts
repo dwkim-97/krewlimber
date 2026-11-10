@@ -122,7 +122,7 @@ describe('achievements', () => {
       expect(await persistent.prepare("SELECT nickname FROM users WHERE id='old'").get()).toMatchObject({
         nickname: '기존회원',
       });
-      expect(await persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 8});
+      expect(await persistent.prepare('SELECT count(*) AS n FROM achievementDefinitions').get()).toMatchObject({n: 15});
       await persistent.prepare("DELETE FROM achievementDefinitions WHERE id='theclimb-red-50'").run();
       persistent.close();
       persistent = openDatabase(file);

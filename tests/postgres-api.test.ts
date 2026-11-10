@@ -26,7 +26,7 @@ it('runs signup, session and profile APIs against PostgreSQL', async () => {
     expect(members.status).toBe(200);
     expect(members.body.members[0]).toMatchObject({nickname: '크루', titles: [], featuredAchievement: null});
     expect((await agent.get('/api/titles')).status).toBe(200);
-    expect((await agent.get('/api/me/achievements')).body.achievements).toHaveLength(8);
+    expect((await agent.get('/api/me/achievements')).body.achievements).toHaveLength(15);
     expect((await agent.get('/api/notices')).body.items).toEqual([]);
     expect((await agent.get('/api/market/products')).body.items).toEqual([]);
     expect((await agent.get('/api/me/wallet')).body.balance).toBe(0);

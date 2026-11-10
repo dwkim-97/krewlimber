@@ -1,19 +1,23 @@
 import type {Database} from './database';
+import {PostgresDatabase} from './database';
 import type {
   AchievementCollection,
   ActivityCounts,
   ActivityMetric,
+  ProgressMetric,
   AdminProgression,
   Member,
   MemberProfile,
   Role,
   TitleBadge,
   TitleBoard,
+  TitleCategory,
   TitleStanding,
 } from '../src/types';
 import {ACTIVITY_METRICS, EMPTY_COUNTS, TITLE_DEFINITIONS} from '../src/consts/progression';
 import {achievementDefinitions, conditionProgress} from './achievement-conditions';
 import {ApiError} from './errors';
+import {progressionCounts} from './progression-counts';
 
 export function currentQuarter(date: Date): string {
   const parts = new Intl.DateTimeFormat('en', {
@@ -27,47 +31,59 @@ export function currentQuarter(date: Date): string {
 }
 
 async function quarters(db: Database, selected: string) {
-  const stored = (await db.prepare('SELECT DISTINCT quarter FROM activityStats').all()) as {quarter: string}[];
-  return [...new Set([selected, currentQuarter(new Date()), ...stored.map(row => row.quarter)])].sort().reverse();
+  const pointQuarter =
+    db instanceof PostgresDatabase
+      ? `to_char(createdAt::timestamptz AT TIME ZONE 'Asia/Seoul', 'YYYY-"Q"Q')`
+      : "strftime('%Y',createdAt,'+9 hours') || '-Q' || ((CAST(strftime('%m',createdAt,'+9 hours') AS INTEGER)+2)/3)";
+  const stored = await db
+    .prepare(
+      `SELECT quarter FROM activityStats
+    UNION SELECT ${pointQuarter} AS quarter FROM (SELECT createdAt FROM pointLedger WHERE kind='grant' UNION ALL SELECT createdAt FROM marketOrders) events
+    UNION SELECT substr(visitedOn,1,4) || '-Q' || ((CAST(substr(visitedOn,6,2) AS INTEGER)+2)/3) AS quarter FROM climbingVisits`
+    )
+    .all();
+  return [...new Set([selected, currentQuarter(new Date()), ...stored.map(row => String(row.quarter))])]
+    .sort()
+    .reverse();
+}
+
+async function titleCategories(db: Database, quarter: string): Promise<TitleCategory[]> {
+  const counts = await progressionCounts(db, quarter, null);
+  const members = await db
+    .prepare("SELECT id,nickname FROM users WHERE status='approved' ORDER BY nickname COLLATE NOCASE,id")
+    .all();
+  return TITLE_DEFINITIONS.map(definition => {
+    const matching = members
+      .map(member => ({
+        userId: String(member.id),
+        nickname: String(member.nickname),
+        value: counts.get(String(member.id))?.[definition.metric] ?? 0,
+      }))
+      .filter(record => record.value > 0)
+      .sort((a, b) => b.value - a.value);
+    let rank = 0;
+    let previous = -1;
+    const standings: TitleStanding[] = matching.map((record, index) => {
+      if (record.value !== previous) rank = index + 1;
+      previous = record.value;
+      return {userId: record.userId, nickname: record.nickname, value: record.value, rank};
+    });
+    return {...definition, standings};
+  });
 }
 
 export async function getTitleBoard(db: Database, quarter: string): Promise<TitleBoard> {
-  const records = (await db
-    .prepare(
-      `SELECT a.userId,u.nickname,a.metric,a.value FROM activityStats a
-    JOIN users u ON u.id=a.userId WHERE a.quarter=? AND u.status='approved' AND a.value>0
-    ORDER BY a.value DESC,u.nickname COLLATE NOCASE ASC,u.id ASC`
-    )
-    .all(quarter)) as unknown as {userId: string; nickname: string; metric: ActivityMetric; value: number}[];
-  return {
-    quarter,
-    quarters: await quarters(db, quarter),
-    categories: TITLE_DEFINITIONS.map(definition => {
-      const matching = records.filter(record => record.metric === definition.metric);
-      let rank = 0;
-      let previous = -1;
-      const standings: TitleStanding[] = matching.map((record, index) => {
-        if (record.value !== previous) rank = index + 1;
-        previous = record.value;
-        return {userId: record.userId, nickname: record.nickname, value: record.value, rank};
-      });
-      return {...definition, standings};
-    }),
-  };
+  return {quarter, quarters: await quarters(db, quarter), categories: await titleCategories(db, quarter)};
 }
 
 export async function getAchievements(db: Database, userId: string): Promise<AchievementCollection> {
   const definitions = await achievementDefinitions(db);
   const recorded = new Map((await conditionProgress(db, userId)).map(r => [r.achievementId, Number(r.value)]));
-  const totals = (await db
-    .prepare('SELECT metric,SUM(value) AS value FROM activityStats WHERE userId=? GROUP BY metric')
-    .all(userId)) as unknown as {metric: ActivityMetric; value: number}[];
-  const counts = {...EMPTY_COUNTS};
-  for (const row of totals) counts[row.metric] = row.value;
+  const counts = (await progressionCounts(db, null, userId)).get(userId);
   const selected = (await db.prepare('SELECT achievementId FROM featuredAchievements WHERE userId=?').get(userId)) as
     {achievementId: string} | undefined;
   const achievements = definitions.map(definition => {
-    const progress = definition.condition ? (recorded.get(definition.id) ?? 0) : counts[definition.metric];
+    const progress = definition.condition ? (recorded.get(definition.id) ?? 0) : (counts?.[definition.metric] ?? 0);
     const earned = progress >= definition.target;
     return {...definition, progress, earned, featured: earned && selected?.achievementId === definition.id};
   });
@@ -96,8 +112,11 @@ export async function setActivityCounts(db: Database, userId: string, quarter: s
   const upsert = db.prepare(`INSERT INTO activityStats(userId,quarter,metric,value) VALUES(?,?,?,?)
     ON CONFLICT(userId,quarter,metric) DO UPDATE SET value=excluded.value`);
   for (const metric of ACTIVITY_METRICS) await upsert.run(userId, quarter, metric.id, counts[metric.id]);
-  const collection = await getAchievements(db, userId);
-  if (!collection.featuredAchievementId)
+  await clearUnearnedFeaturedAchievement(db, userId);
+}
+
+export async function clearUnearnedFeaturedAchievement(db: Database, userId: string) {
+  if (!(await getAchievements(db, userId)).featuredAchievementId)
     await db.prepare('DELETE FROM featuredAchievements WHERE userId=?').run(userId);
 }
 
@@ -107,7 +126,7 @@ export async function decorateMembers(
   quarter: string
 ): Promise<Member[]> {
   const titlesByUser = new Map<string, TitleBadge[]>();
-  for (const category of (await getTitleBoard(db, quarter)).categories)
+  for (const category of await titleCategories(db, quarter))
     for (const holder of category.standings.filter(person => person.rank === 1)) {
       const badges = titlesByUser.get(holder.userId) ?? [];
       badges.push({
@@ -124,11 +143,7 @@ export async function decorateMembers(
       'SELECT f.userId,d.id,d.name,d.description,d.metric,d.target,c.achievementId AS conditionId FROM featuredAchievements f JOIN achievementDefinitions d ON d.id=f.achievementId LEFT JOIN achievementConditions c ON c.achievementId=d.id'
     )
     .all();
-  const totals = await db
-    .prepare(
-      'SELECT a.userId,a.metric,SUM(a.value) AS value FROM activityStats a JOIN featuredAchievements f ON f.userId=a.userId GROUP BY a.userId,a.metric'
-    )
-    .all();
+  const totals = await progressionCounts(db, null, null);
   const recorded = await conditionProgress(db);
   const featuredByUser = new Map(
     featured
@@ -137,7 +152,7 @@ export async function decorateMembers(
           Number(
             f.conditionId
               ? (recorded.find(r => r.userId === f.userId && r.achievementId === f.id)?.value ?? 0)
-              : (totals.find(r => r.userId === f.userId && r.metric === f.metric)?.value ?? 0)
+              : (totals.get(String(f.userId))?.[f.metric as ProgressMetric] ?? 0)
           ) >= Number(f.target)
       )
       .map(f => [String(f.userId), {id: String(f.id), name: String(f.name), description: String(f.description)}])

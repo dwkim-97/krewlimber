@@ -37,11 +37,43 @@ export const TITLE_DEFINITIONS: Omit<TitleCategory, 'standings'>[] = [
   },
   {
     id: 'purple',
-    name: '보라클레스',
+    name: '보라 클래스',
     description: '[더클라임] 보라 완등 1위',
     metric: 'purple',
     unit: '개',
     accent: 'purple',
+  },
+  {
+    id: 'gray',
+    name: '세계관 최강자',
+    description: '[더클라임] 회색 완등 1위',
+    metric: 'gray',
+    unit: '개',
+    accent: 'gray',
+  },
+  {
+    id: 'attended',
+    name: '번개 붙박이',
+    description: '번개 참여 횟수 1위',
+    metric: 'attended',
+    unit: '회',
+    accent: 'lime',
+  },
+  {
+    id: 'pointsEarned',
+    name: '포인트 채굴왕',
+    description: '지급액에서 차감 정정을 반영한 포인트 순획득 1위',
+    metric: 'pointsEarned',
+    unit: 'P',
+    accent: 'yellow',
+  },
+  {
+    id: 'pointsSpent',
+    name: '마켓 큰손',
+    description: '취소·환불을 제외한 포인트 실사용 1위',
+    metric: 'pointsSpent',
+    unit: 'P',
+    accent: 'yellow',
   },
 ];
 export const DEFAULT_ACHIEVEMENTS: AchievementDefinition[] = [
@@ -100,6 +132,58 @@ export const DEFAULT_ACHIEVEMENTS: AchievementDefinition[] = [
     description: '[크루라이머] 번개 50회 참여',
     metric: 'attended',
     target: 50,
+  },
+];
+
+export const ADDITIONAL_ACHIEVEMENTS: AchievementDefinition[] = [
+  {
+    id: 'krew-attended-100',
+    name: '번개가 나를 부른다',
+    description: '[크루라이머] 번개 100회 참여',
+    metric: 'attended',
+    target: 100,
+  },
+  {
+    id: 'market-earned-1000',
+    name: '티끌 모아 초크백',
+    description: '[마켓] 포인트 순획득 1,000P 달성',
+    metric: 'pointsEarned',
+    target: 1000,
+  },
+  {
+    id: 'market-earned-5000',
+    name: '포인트가 복사가 된다고',
+    description: '[마켓] 포인트 순획득 5,000P 달성',
+    metric: 'pointsEarned',
+    target: 5000,
+  },
+  {
+    id: 'market-earned-10000',
+    name: '크루의 금고지기',
+    description: '[마켓] 포인트 순획득 10,000P 달성',
+    metric: 'pointsEarned',
+    target: 10000,
+  },
+  {
+    id: 'market-spent-1000',
+    name: '첫 지름의 맛',
+    description: '[마켓] 포인트 실사용 1,000P 달성',
+    metric: 'pointsSpent',
+    target: 1000,
+  },
+  {
+    id: 'market-spent-5000',
+    name: '포인트는 거들 뿐',
+    description: '[마켓] 포인트 실사용 5,000P 달성',
+    metric: 'pointsSpent',
+    target: 5000,
+  },
+  {
+    id: 'market-spent-10000',
+    name: '이 구역 큰손은 나야',
+    description: '[마켓] 포인트 실사용 10,000P 달성',
+    metric: 'pointsSpent',
+    target: 10000,
   },
 ];
 

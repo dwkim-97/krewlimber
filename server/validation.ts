@@ -12,6 +12,51 @@ export const passwordSchema = z
 
 export const nicknameSchema = z.string().trim().min(2).max(20);
 
+const instagramServicePaths = new Set([
+  'accounts',
+  'about',
+  'api',
+  'challenge',
+  'developer',
+  'developers',
+  'direct',
+  'directory',
+  'emails',
+  'explore',
+  'legal',
+  'oauth',
+  'p',
+  'privacy',
+  'reel',
+  'reels',
+  'static',
+  'stories',
+  'terms',
+  'tv',
+  'web',
+]);
+
+export const instagramSchema = z
+  .string()
+  .trim()
+  .max(200)
+  .transform((value, context) => {
+    if (!value) return '';
+    const handle = value
+      .replace(/^https:\/\/(?:www\.)?instagram\.com\/([a-z0-9_.]+)\/?$/i, '$1')
+      .replace(/^@/, '')
+      .toLowerCase();
+    if (
+      !/^[a-z0-9_](?:[a-z0-9_.]{0,28}[a-z0-9_])?$/.test(handle) ||
+      handle.includes('..') ||
+      instagramServicePaths.has(handle)
+    ) {
+      context.addIssue({code: 'custom', message: '인스타그램 프로필 주소 또는 계정명을 입력해주세요.'});
+      return z.NEVER;
+    }
+    return `https://www.instagram.com/${handle}/`;
+  });
+
 export const fullNameSchema = z
   .string()
   .trim()

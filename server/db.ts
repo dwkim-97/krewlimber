@@ -5,13 +5,13 @@ import {DatabaseSync} from 'node:sqlite';
 import {achievementConditionsSchema} from './achievement-conditions';
 import {gymCommentsSchema} from './gym-comments';
 import {climbingSchema} from './climbing-schema';
-import {DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
+import {ADDITIONAL_ACHIEVEMENTS, DEFAULT_ACHIEVEMENTS} from '../src/consts/progression';
 
 export function openDatabase(path: string) {
   if (path !== ':memory:') mkdirSync(dirname(resolve(path)), {recursive: true, mode: 0o700});
   const db = new DatabaseSync(path);
   const version = Number(db.prepare('PRAGMA user_version').get()!.user_version);
-  if (version > 6) {
+  if (version > 7) {
     db.close();
     throw new Error('Unsupported database version.');
   }
@@ -218,6 +218,38 @@ export function openDatabase(path: string) {
       }
       db.exec('PRAGMA user_version=6;');
     });
+  }
+  if (version < 7) {
+    db.exec('PRAGMA foreign_keys=OFF;');
+    try {
+      transaction(db, () => {
+        if (
+          !db
+            .prepare('PRAGMA table_info(users)')
+            .all()
+            .some(column => column.name === 'instagramUrl')
+        )
+          db.exec("ALTER TABLE users ADD COLUMN instagramUrl TEXT NOT NULL DEFAULT '';");
+        db.exec(`
+          CREATE TABLE achievementDefinitions_restored (
+            id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL,
+            metric TEXT NOT NULL CHECK(metric IN ('participation','hosted','attended','red','pink','purple','gray','pointsEarned','pointsSpent')),
+            target INTEGER NOT NULL CHECK(target>0 AND target<=1000000 AND typeof(target)='integer')
+          );
+          INSERT INTO achievementDefinitions_restored SELECT id,name,description,metric,target FROM achievementDefinitions;
+          DROP TABLE achievementDefinitions;
+          ALTER TABLE achievementDefinitions_restored RENAME TO achievementDefinitions;
+        `);
+        const insert = db.prepare(
+          'INSERT OR IGNORE INTO achievementDefinitions(id,name,description,metric,target) VALUES(?,?,?,?,?)'
+        );
+        for (const item of ADDITIONAL_ACHIEVEMENTS)
+          insert.run(item.id, item.name, item.description, item.metric, item.target);
+        db.exec('PRAGMA user_version=7;');
+      });
+    } finally {
+      db.exec('PRAGMA foreign_keys=ON;');
+    }
   }
   db.exec(
     "INSERT OR IGNORE INTO gyms(id,name,address,createdAt) VALUES('gym-climbingpark-gangnam','클라이밍파크 강남점','','2026-11-06'),('gym-theclimb-gangnam','더클라임 강남점','','2026-11-06'); INSERT OR IGNORE INTO gymGrades(id,gymId,name,color,createdAt) VALUES('park-gray','gym-climbingpark-gangnam','회색','#888888','2026-11-06'),('climb-purple','gym-theclimb-gangnam','보라','#8654ad','2026-11-06');"

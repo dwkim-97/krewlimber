@@ -112,7 +112,7 @@
   font-weight: 500;
   flex-shrink: 0;
 }
-.member-card-context > span:last-child:not(.member-grade) {
+.member-card-context > span:not(.member-grade) {
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -120,6 +120,19 @@
 }
 .member-card-context svg {
   margin-right: 3px;
+}
+.member-instagram {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.member-instagram svg {
+  margin: 0;
 }
 .member-card-stats {
   display: grid;
