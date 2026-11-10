@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   UserRound,
   LogIn,
+  Grid3X3,
 } from 'lucide-react';
 import {useEffect, useState} from 'react';
 import {Link, NavLink, Outlet, useLocation} from 'react-router-dom';
@@ -84,6 +85,9 @@ export function Layout() {
                 <span className="nav-divider" aria-hidden="true" />
               </>
             )}
+            <NavLink to="/event/bingo">
+              <Grid3X3 size={14} aria-hidden="true" /> 이벤트 빙고
+            </NavLink>
             {user ? (
               <NavLink className="nav-account" to="/me">
                 <UserRound size={15} aria-hidden="true" /> 내 정보
