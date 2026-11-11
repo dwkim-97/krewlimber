@@ -221,6 +221,9 @@ it.each(['sqlite', 'postgres'])(
         state = checked.body;
       }
       expect(state.team.lines).toBe(12);
+      expect(state.rankings).toMatchObject([{name: '1조', lines: 12, rank: 1}]);
+      expect((await guest.get(base)).body.rankings).toMatchObject([{name: '1조', lines: 12, rank: 1}]);
+      expect((await request(app).get(base)).body.rankings).toEqual([]);
       expect((await admin.get(base + '/admin')).body.rankings).toMatchObject([{name: '1조', lines: 12, rank: 1}]);
       expect((await other.get(base)).body.team.marked).toHaveLength(25);
       await db.prepare("UPDATE users SET status='pending' WHERE id=?").run(account.id);

@@ -1,4 +1,5 @@
 import {useState, type FormEvent} from 'react';
+import {Trophy} from 'lucide-react';
 import {Link} from 'react-router-dom';
 import {useBingoResource} from '@/hooks/useBingoResource';
 import type {BingoEvent, BingoRanking, BingoState, BingoTeam} from '@/types/bingo';
@@ -79,6 +80,7 @@ export function Bingo() {
               team={data.team}
               canMark={data.canMark}
               isMember={data.isMember}
+              rankings={data.rankings}
               busy={resource.busy}
               send={resource.send}
             />
@@ -96,6 +98,7 @@ function TeamPanel({
   team,
   canMark,
   isMember,
+  rankings,
   busy,
   send,
 }: {
@@ -103,6 +106,7 @@ function TeamPanel({
   team: BingoTeam;
   canMark: boolean;
   isMember: boolean;
+  rankings: BingoRanking[];
   busy: boolean;
   send: Send;
 }) {
@@ -113,6 +117,9 @@ function TeamPanel({
   const target = {eventId: event.id, teamId: team.id};
   const collecting = event.phase === 'collecting';
   const canArrange = collecting && team.acquired.length >= 25;
+  const rank = rankings.find(entry => entry.teamId === team.id)?.rank ?? null;
+  const tied = rank !== null && rankings.some(entry => entry.teamId !== team.id && entry.rank === rank);
+  const rankLabel = rank === null ? '순위 없음' : `${tied ? '공동 ' : ''}${rank}위`;
   const availableSelection =
     selected !== null && team.acquired.includes(selected) && !team.board.includes(selected) ? selected : null;
   const numbers = showAll
@@ -253,9 +260,16 @@ function TeamPanel({
         </>
       ) : (
         <>
-          <p className="bingo-lines" aria-live="polite">
-            우리 조 {team.lines}줄
-          </p>
+          <div className="bingo-score-summary" aria-live="polite">
+            <p className="bingo-lines">우리 조 {team.lines}줄</p>
+            <span
+              className={`bingo-standing bingo-standing-${rank !== null && rank <= 3 ? rank : 'default'}`}
+              aria-label={`${event.phase === 'finished' ? '최종' : '현재'} 순위: ${rankLabel}`}
+            >
+              {rank !== null && rank <= 3 && <Trophy size={16} fill="currentColor" aria-hidden="true" />}
+              {rankLabel}
+            </span>
+          </div>
           {event.phase === 'playing' &&
             (!team.ready ? (
               <p className="bingo-help">미완성 판으로 이번 게임의 체크와 순위에서 제외돼요.</p>

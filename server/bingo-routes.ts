@@ -49,15 +49,20 @@ export function registerBingoRoutes(app: Express, db: Database, auth: BoardAutho
   async function state(req: Request): Promise<BingoState> {
     const event = await currentBingoEvent(db);
     const row = event ? await joined(req, event) : null;
-    const team = row ? bingoTeam(row) : null;
+    let team = row ? bingoTeam(row) : null;
+    let rankings: BingoState['rankings'] = [];
+    if (event && row && event.phase !== 'collecting') {
+      const teams = (await bingoTeamRows(db, event.id)).map(bingoTeam);
+      team = teams.find(candidate => candidate.id === row.id) ?? null;
+      if (team) rankings = bingoRankings(teams);
+    }
     const isMember = (await sessionUser(db, req))?.status === 'approved';
     return {
       event,
       team,
       isMember,
       canMark: Boolean(isMember && team?.ready && event?.phase === 'playing'),
-      rankings:
-        event?.phase === 'finished' && team ? bingoRankings((await bingoTeamRows(db, event.id)).map(bingoTeam)) : [],
+      rankings,
     };
   }
   async function editable(

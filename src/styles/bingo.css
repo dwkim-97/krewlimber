@@ -206,6 +206,8 @@
   font-weight: 750;
   box-shadow: 0 2px 0 #e7e9df;
   color: #293a26;
+}
+.bingo-cell:disabled {
   opacity: 1;
 }
 .bingo-cell[data-locked='true'] {
@@ -240,11 +242,52 @@
   color: #405c36;
   font-weight: 700;
 }
+.bingo-score-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 20px 0 12px;
+}
 .bingo-lines {
-  font-size: 28px;
+  font-size: clamp(22px, 6vw, 28px);
   font-weight: 800;
   letter-spacing: -1px;
-  margin: 20px 0 8px;
+  margin: 0;
+}
+.bingo-standing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 13px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.bingo-standing-1 {
+  color: #79500b;
+  border-color: #ddbd67;
+  background: linear-gradient(120deg, #fff8de, #f5dfa1);
+  box-shadow: 0 3px 12px #b58a2221;
+}
+.bingo-standing-2 {
+  color: #4d526e;
+  border-color: #b9bdd1;
+  background: linear-gradient(120deg, #f7f8ff, #dfe3f0);
+  box-shadow: 0 3px 10px #666e9517;
+}
+.bingo-standing-3 {
+  color: #845035;
+  border-color: #cfa78d;
+  background: linear-gradient(120deg, #fff3e9, #eed3bc);
+}
+.bingo-standing-default {
+  color: #566650;
+  border-color: #d3dccb;
+  background: #f0f4ec;
 }
 .bingo-login {
   margin: 0 0 18px;

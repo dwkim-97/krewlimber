@@ -393,3 +393,57 @@ it.each(['collecting', 'playing'] as const)('shows save feedback only on the pre
   });
   await waitFor(() => expect(first.getAttribute('aria-busy')).toBe('false'));
 });
+
+it.each([
+  {rank: 1, tied: false, label: '1위'},
+  {rank: 2, tied: false, label: '2위'},
+  {rank: 3, tied: true, label: '공동 3위'},
+  {rank: 4, tied: false, label: '4위'},
+])('shows current $label beside the line count', async ({rank, tied, label}) => {
+  const current = state('playing');
+  current.team!.board = [...numbers];
+  current.team!.ready = true;
+  current.team!.lines = 2;
+  current.rankings = [{teamId: 'team', name: '파랑 조', lines: 2, rank, ready: true}];
+  if (tied) current.rankings.push({teamId: 'other', name: '노랑 조', lines: 2, rank, ready: true});
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => response(current))
+  );
+  mount();
+  expect(await screen.findByLabelText(`현재 순위: ${label}`)).toBeTruthy();
+  expect(screen.getByText('우리 조 2줄')).toBeTruthy();
+});
+
+it('updates the shared standing after a mark and keeps incomplete teams unranked', async () => {
+  const current = state('playing');
+  current.team!.board = [...numbers];
+  current.team!.ready = true;
+  current.isMember = true;
+  current.canMark = true;
+  current.rankings = [{teamId: 'team', name: '파랑 조', lines: 0, rank: 2, ready: true}];
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_url: string, init: RequestInit) => {
+      if (init?.method) {
+        current.team!.lines = 1;
+        current.rankings = [
+          {teamId: 'team', name: '파랑 조', lines: 1, rank: 1, ready: true},
+          {teamId: 'other', name: '노랑 조', lines: 1, rank: 1, ready: true},
+        ];
+      }
+      return response(current);
+    })
+  );
+  mount();
+  await screen.findByLabelText('현재 순위: 2위');
+  fireEvent.click(screen.getByRole('button', {name: '1행 1열 숫자 1'}));
+  expect(await screen.findByLabelText('현재 순위: 공동 1위')).toBeTruthy();
+  cleanup();
+  current.team!.ready = false;
+  current.team!.board[0] = null;
+  current.canMark = false;
+  current.rankings = [{teamId: 'team', name: '파랑 조', lines: 0, rank: null, ready: false}];
+  mount();
+  expect(await screen.findByLabelText('현재 순위: 순위 없음')).toBeTruthy();
+});

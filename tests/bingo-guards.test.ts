@@ -1,6 +1,6 @@
 import {randomBytes} from 'node:crypto';
 import request from 'supertest';
-import {expect, it} from 'vitest';
+import {expect, it, vi} from 'vitest';
 import {createApp} from '../server/app';
 import {hashToken} from '../server/auth';
 import {openDatabase} from '../server/db';
@@ -200,6 +200,60 @@ it.each(['sqlite', 'postgres'])(
             .send({eventId: 'event', teamId: 'ours', board, revision: 4})
         ).status
       ).toBe(200);
+    } finally {
+      await db.close();
+    }
+  },
+  30000
+);
+
+it.each(['sqlite', 'postgres'])(
+  'returns the board score and live rank from the same team snapshot (%s)',
+  async backend => {
+    const db = backend === 'postgres' ? await openPostgresTestDatabase() : openDatabase(':memory:');
+    try {
+      const numbers = Array.from({length: 25}, (_, index) => index + 1);
+      await db
+        .prepare("INSERT INTO bingoEvents(id,maxValue,phase,createdAt) VALUES('event',75,'playing',?)")
+        .run(new Date().toISOString());
+      await db
+        .prepare('INSERT INTO bingoTeams(id,eventId,name,code,acquired,board) VALUES(?,?,?,?,?,?)')
+        .run('ours', 'event', '우리 조', 'ABCD2345', JSON.stringify(numbers), JSON.stringify(numbers));
+      const guest = request.agent(createApp({db, origin, secureCookies: false, trustProxy: false}));
+      await guest
+        .post(base + '/join')
+        .set('Origin', origin)
+        .send({code: 'ABCD2345'});
+      const prepare = db.prepare.bind(db);
+      let changed = false;
+      const spy = vi.spyOn(db, 'prepare').mockImplementation(sql => {
+        const statement = prepare(sql);
+        if (!sql.startsWith('SELECT t.* FROM bingoTeams t JOIN bingoSessions')) return statement;
+        return {
+          all: statement.all.bind(statement),
+          run: statement.run.bind(statement),
+          get: async (...values: Parameters<typeof statement.get>) => {
+            const row = await statement.get(...values);
+            if (!changed) {
+              changed = true;
+              await prepare("UPDATE bingoTeams SET marked=?,revision=revision+1 WHERE id='ours'").run(
+                JSON.stringify(numbers.slice(0, 10))
+              );
+            }
+            return row;
+          },
+        };
+      });
+      try {
+        const result = await guest.get(base);
+        expect(result.status).toBe(200);
+        expect(changed).toBe(true);
+        expect(result.body.team.lines).toBe(2);
+        expect(result.body.team.marked).toHaveLength(10);
+        expect(result.body.rankings).toMatchObject([{teamId: 'ours', lines: 2, rank: 1}]);
+      } finally {
+        spy.mockRestore();
+      }
     } finally {
       await db.close();
     }
