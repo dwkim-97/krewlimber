@@ -1,0 +1,235 @@
+.bingo-admin-page {
+  max-width: 900px;
+}
+.bingo-admin-heading,
+.bingo-admin-section-heading,
+.bingo-admin-team-top,
+.bingo-admin-code,
+.bingo-admin-sync {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.bingo-admin-heading {
+  margin-bottom: 20px;
+}
+.bingo-admin-heading h1 {
+  margin: 8px 0;
+  font-size: clamp(30px, 6vw, 44px);
+}
+.bingo-admin-heading p,
+.bingo-admin-panel p {
+  color: var(--muted);
+  line-height: 1.7;
+}
+.bingo-admin-sync {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.bingo-admin-sync button,
+.bingo-admin-code button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.bingo-admin-panel {
+  margin: 18px 0;
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+}
+.bingo-admin-section-heading {
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+.bingo-admin-panel h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.bingo-admin-section-heading > strong {
+  color: var(--muted);
+  font-size: 13px;
+}
+.bingo-admin-phase {
+  padding: 7px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  background: #f3eedf;
+}
+.bingo-admin-phase-playing,
+.bingo-admin-ready {
+  color: #19653f;
+  background: #e9f4ec;
+}
+.bingo-admin-phase-finished {
+  color: var(--muted);
+  background: #eeefee;
+}
+.bingo-admin-range strong {
+  color: var(--ink);
+}
+.bingo-admin-form {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 18px 0;
+}
+.bingo-admin-form label {
+  display: grid;
+  flex: 1;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.bingo-admin-form input {
+  width: 100%;
+  min-width: 0;
+}
+.bingo-admin-form small {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.bingo-admin-form button {
+  flex-shrink: 0;
+}
+.bingo-admin-note {
+  font-size: 12px;
+}
+.bingo-admin-teams {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.bingo-admin-team {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.bingo-admin-team h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 16px;
+}
+.bingo-admin-ready,
+.bingo-admin-unready {
+  flex-shrink: 0;
+  border-radius: 12px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.bingo-admin-unready {
+  color: #805b10;
+  background: #fff2cf;
+}
+.bingo-admin-code {
+  margin: 18px 0;
+  padding: 12px;
+  border-radius: 9px;
+  background: #f6f6f3;
+}
+.bingo-admin-code code {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+.bingo-admin-team-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.bingo-admin-team-stats strong {
+  color: var(--ink);
+}
+.bingo-admin-team summary {
+  padding: 10px 0;
+  font-size: 12px;
+  cursor: pointer;
+}
+.bingo-admin-board {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+}
+.bingo-admin-board span {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 5px;
+  background: #f1f2ee;
+  font-size: 13px;
+}
+.bingo-admin-board .marked {
+  color: #fff;
+  background: #286a4a;
+}
+.bingo-admin-empty {
+  padding: 18px 0;
+  text-align: center;
+}
+.bingo-admin-panel .bingo-admin-warning {
+  padding: 14px;
+  color: #805b10;
+  background: #fff5db;
+  border-radius: 10px;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.bingo-admin-transition > .button {
+  width: 100%;
+  margin-top: 12px;
+}
+.bingo-admin-rankings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.bingo-admin-rankings td,
+.bingo-admin-rankings th {
+  padding: 14px 8px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+.bingo-admin-rankings thead {
+  color: var(--muted);
+  font-size: 12px;
+}
+@media (max-width: 600px) {
+  .bingo-admin-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .bingo-admin-heading p {
+    font-size: 13px;
+  }
+  .bingo-admin-panel {
+    padding: 18px;
+    border-radius: 16px;
+  }
+  .bingo-admin-teams {
+    grid-template-columns: 1fr;
+  }
+  .bingo-admin-form {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .bingo-admin-form button {
+    width: 100%;
+  }
+  .bingo-admin-section-heading {
+    gap: 12px;
+  }
+}

@@ -14,8 +14,11 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
   const location = useLocation();
   const signup = mode === 'signup';
   const recovery = mode === 'recover';
+  const from = (location.state as {from: unknown} | null)?.from;
+  const approvedDestination =
+    mode === 'login' && (from === '/event/bingo' || from === '/event/bingo/admin') ? from : '/';
   if (loading) return <Loading />;
-  if (user && !recovery) return <Navigate to={user.status === 'approved' ? '/' : '/me'} replace />;
+  if (user && !recovery) return <Navigate to={user.status === 'approved' ? approvedDestination : '/me'} replace />;
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -35,7 +38,7 @@ export function Auth({mode}: {mode: 'login' | 'signup' | 'recover'}) {
       const nextUser = await refresh();
       if (recovery) setDone(true);
       else {
-        navigate(signup || nextUser?.status !== 'approved' ? '/me' : '/', {replace: true});
+        navigate(signup || nextUser?.status !== 'approved' ? '/me' : approvedDestination, {replace: true});
       }
     } catch (error) {
       setError(error instanceof Error ? error.message : '다시 시도해주세요.');

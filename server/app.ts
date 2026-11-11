@@ -24,6 +24,7 @@ import {transaction} from './database';
 import {ApiError} from './errors';
 import {currentQuarter, decorateMembers} from './progression';
 import {registerProgressionRoutes} from './progression-routes';
+import {registerBingoRoutes} from './bingo-routes';
 import {registerGymComments} from './gym-comments';
 import {registerClimbingRoutes} from './climbing-routes';
 import {registerNoticeRoutes} from './notice-routes';
@@ -264,6 +265,7 @@ export function createApp({
       .all()) as unknown as (MemberProfile & {role: User['role']; points: number})[];
     res.json({members: await decorateMembers(db, members, currentQuarter(new Date()))});
   });
+  registerBingoRoutes(app, db, {member: requireMember, admin: requireAdmin, audit}, secureCookies);
   registerGymComments(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerClimbingRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});
   registerNoticeRoutes(app, db, {member: requireMember, admin: requireAdmin, audit});

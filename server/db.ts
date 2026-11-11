@@ -1,3 +1,4 @@
+import {bingoSchema} from './bingo-schema';
 import {gymIdentity} from '../src/consts/gym-identity';
 import {mkdirSync, chmodSync} from 'node:fs';
 import {dirname, resolve} from 'node:path';
@@ -157,6 +158,7 @@ export function openDatabase(path: string) {
   )
     db.exec('ALTER TABLE users ADD COLUMN level INTEGER NOT NULL DEFAULT 0 CHECK(level>=0 AND level<=11);');
   db.exec(climbingSchema);
+  db.exec(bingoSchema);
   if (
     !db
       .prepare('PRAGMA table_info(gyms)')

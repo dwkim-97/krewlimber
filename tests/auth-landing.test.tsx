@@ -24,15 +24,17 @@ afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
-function view(user: User | null) {
+function view(user: User | null, from: string) {
   render(
-    <MemoryRouter initialEntries={[{pathname: '/login', state: {from: '/members'}}]}>
+    <MemoryRouter initialEntries={[{pathname: '/login', state: {from}}]}>
       <SessionContext.Provider value={{user, loading: false, error: '', refresh: async () => member}}>
         <Routes>
           <Route path="/login" element={<Auth mode="login" />} />
           <Route path="/" element={<h1>베이스캠프</h1>} />
           <Route path="/me" element={<h1>내 정보</h1>} />
           <Route path="/members" element={<h1>멤버</h1>} />
+          <Route path="/event/bingo" element={<h1>이벤트 빙고</h1>} />
+          <Route path="/event/bingo/admin" element={<h1>빙고 운영</h1>} />
         </Routes>
       </SessionContext.Provider>
     </MemoryRouter>
@@ -43,18 +45,18 @@ it('opens basecamp after login even when an earlier protected route was saved', 
     'fetch',
     vi.fn(async () => new Response(JSON.stringify({user: member})))
   );
-  view(null);
+  view(null, '/members');
   fireEvent.change(screen.getByLabelText('아이디'), {target: {value: 'crew.member'}});
   fireEvent.change(screen.getByLabelText('비밀번호'), {target: {value: '1234'}});
   fireEvent.click(screen.getByRole('button', {name: /^로그인$/}));
   expect(await screen.findByRole('heading', {name: '베이스캠프'})).toBeTruthy();
 });
 it('redirects an already approved member from login to basecamp', async () => {
-  view(member);
+  view(member, '/members');
   expect(await screen.findByRole('heading', {name: '베이스캠프'})).toBeTruthy();
 });
 it('keeps pending members on their membership status page', async () => {
-  view({...member, status: 'pending'});
+  view({...member, status: 'pending'}, '/event/bingo');
   expect(await screen.findByRole('heading', {name: '내 정보'})).toBeTruthy();
 });
 
@@ -89,4 +91,29 @@ it('collects a required Korean name separately from nickname at signup', async (
   fireEvent.click(screen.getByRole('button', {name: '가입 신청'}));
   expect(await screen.findByRole('heading', {name: '가입 상태'})).toBeTruthy();
   expect(submitted).toMatchObject({username: 'signup.member', fullName: '김성수', nickname: '클라이머'});
+});
+
+it.each(['/event/bingo', '/event/bingo/admin'])(
+  'returns an approved member to the known bingo path %s after login',
+  async path => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => new Response(JSON.stringify({user: member})))
+    );
+    view(null, path);
+    fireEvent.change(screen.getByLabelText('아이디'), {target: {value: 'crew.member'}});
+    fireEvent.change(screen.getByLabelText('비밀번호'), {target: {value: '1234'}});
+    fireEvent.click(screen.getByRole('button', {name: /^로그인$/}));
+    expect(
+      await screen.findByRole('heading', {name: path.endsWith('/admin') ? '빙고 운영' : '이벤트 빙고'})
+    ).toBeTruthy();
+  }
+);
+it('returns an already approved member to bingo without accepting arbitrary redirect paths', async () => {
+  view(member, '/event/bingo');
+  expect(await screen.findByRole('heading', {name: '이벤트 빙고'})).toBeTruthy();
+});
+it('rejects an external saved login destination', async () => {
+  view(member, 'https://example.com/event/bingo');
+  expect(await screen.findByRole('heading', {name: '베이스캠프'})).toBeTruthy();
 });

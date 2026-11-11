@@ -3,6 +3,8 @@ import {createRoot} from 'react-dom/client';
 import {BrowserRouter, Link, Route, Routes, Navigate} from 'react-router-dom';
 import {Admin} from '@/pages/Admin';
 import {Auth} from '@/pages/Auth';
+import {Bingo} from '@/pages/Bingo';
+import {BingoAdmin} from '@/pages/BingoAdmin';
 import {AchievementHub} from '@/pages/AchievementHub';
 import {Gyms} from '@/pages/Gyms';
 import {ClimbingRedirect} from '@/pages/Climbing';
@@ -128,6 +130,15 @@ createRoot(document.getElementById('root')!).render(
               element={
                 <Protected access="member">
                   <MyOrders />
+                </Protected>
+              }
+            />
+            <Route path="event/bingo" element={<Bingo />} />
+            <Route
+              path="event/bingo/admin"
+              element={
+                <Protected access="admin">
+                  <BingoAdmin />
                 </Protected>
               }
             />
