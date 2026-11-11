@@ -108,6 +108,7 @@ function TeamPanel({
 }) {
   const [input, setInput] = useState('');
   const [selected, setSelected] = useState<number | null>(null);
+  const [pendingCell, setPendingCell] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const target = {eventId: event.id, teamId: team.id};
   const collecting = event.phase === 'collecting';
@@ -126,19 +127,24 @@ function TeamPanel({
   async function chooseCell(index: number) {
     const number = team.board[index];
     if (busy) return;
-    if (collecting) {
-      if (number === null && (!canArrange || availableSelection === null)) return;
-      const board = team.board.map((value, position) =>
-        position === index ? (number === null ? availableSelection : null) : value
-      );
-      if (await send('/event/bingo/board', 'PUT', {...target, board, revision: team.revision})) setSelected(null);
-    } else if (event.phase === 'playing' && canMark && number !== null) {
-      await send('/event/bingo/marks', 'PUT', {
-        ...target,
-        number,
-        checked: !team.marked.includes(number),
-        revision: team.revision,
-      });
+    if (collecting && number === null && (!canArrange || availableSelection === null)) return;
+    setPendingCell(index);
+    try {
+      if (collecting) {
+        const board = team.board.map((value, position) =>
+          position === index ? (number === null ? availableSelection : null) : value
+        );
+        if (await send('/event/bingo/board', 'PUT', {...target, board, revision: team.revision})) setSelected(null);
+      } else if (event.phase === 'playing' && canMark && number !== null) {
+        await send('/event/bingo/marks', 'PUT', {
+          ...target,
+          number,
+          checked: !team.marked.includes(number),
+          revision: team.revision,
+        });
+      }
+    } finally {
+      setPendingCell(null);
     }
   }
   async function fillBoard() {
@@ -269,24 +275,26 @@ function TeamPanel({
         </>
       )}
       <div className="bingo-grid" role="group" aria-label={`${team.name} 빙고판`}>
-        {team.board.map((number, index) => (
-          <button
-            key={index}
-            type="button"
-            className="bingo-cell"
-            aria-label={`${Math.floor(index / 5) + 1}행 ${(index % 5) + 1}열 ${number === null ? '빈칸' : `숫자 ${number}`}`}
-            aria-pressed={number !== null && team.marked.includes(number)}
-            disabled={
-              busy ||
-              (collecting
-                ? number === null && (!canArrange || availableSelection === null)
-                : event.phase !== 'playing' || !canMark || number === null)
-            }
-            onClick={() => void chooseCell(index)}
-          >
-            {number ?? <span aria-hidden="true">·</span>}
-          </button>
-        ))}
+        {team.board.map((number, index) => {
+          const locked = collecting
+            ? number === null && (!canArrange || availableSelection === null)
+            : event.phase !== 'playing' || !canMark || number === null;
+          return (
+            <button
+              key={index}
+              type="button"
+              className="bingo-cell"
+              aria-label={`${Math.floor(index / 5) + 1}행 ${(index % 5) + 1}열 ${number === null ? '빈칸' : `숫자 ${number}`}`}
+              aria-pressed={number !== null && team.marked.includes(number)}
+              aria-busy={busy && pendingCell === index}
+              data-locked={locked}
+              disabled={busy || locked}
+              onClick={() => void chooseCell(index)}
+            >
+              {number ?? <span aria-hidden="true">·</span>}
+            </button>
+          );
+        })}
       </div>
       {collecting && (
         <p className={`bingo-ready${team.ready ? ' bingo-ready-complete' : ''}`}>

@@ -80,6 +80,7 @@
   min-width: 0;
   font-size: 13px;
   font-weight: 700;
+  margin: 0;
 }
 .bingo-inline-form input {
   width: 100%;
@@ -90,10 +91,12 @@
   padding: 12px;
   font: inherit;
   font-size: 16px;
-  min-height: 46px;
+  line-height: 1.25;
+  min-height: 48px;
+  margin: 0;
 }
 .bingo-inline-form .button {
-  min-height: 46px;
+  min-height: 48px;
   white-space: nowrap;
 }
 .bingo-number-heading {
@@ -113,16 +116,22 @@
   accent-color: #344632;
 }
 .bingo-number-tray {
-  display: flex;
+  display: grid;
+  grid-template-rows: repeat(2, 48px);
+  grid-auto-flow: column;
+  grid-auto-columns: 48px;
   gap: 8px;
   overflow-x: auto;
   padding: 14px 0;
   scrollbar-width: thin;
-  min-height: 74px;
+  min-height: 132px;
+}
+.bingo-number-tray:has(> p) {
+  display: flex;
+  align-items: center;
 }
 .bingo-number {
   position: relative;
-  flex: 0 0 48px;
   height: 48px;
   border: 1px solid #c6cfb9;
   border-radius: 12px;
@@ -197,17 +206,24 @@
   font-weight: 750;
   box-shadow: 0 2px 0 #e7e9df;
   color: #293a26;
+  opacity: 1;
 }
-.bingo-cell:disabled {
+.bingo-cell[data-locked='true'] {
   color: #64705d;
   background: #f5f5ef;
-  opacity: 1;
 }
 .bingo-cell[aria-pressed='true'] {
   background: #405c36;
   border-color: #405c36;
   color: white;
   box-shadow: 0 2px 0 #283d21;
+}
+.bingo-cell:active:not(:disabled),
+.bingo-cell[aria-busy='true'] {
+  transform: scale(0.97);
+  box-shadow: none;
+  background: #e5eadb;
+  color: #293a26;
 }
 .bingo-cell:focus-visible,
 .bingo-number:focus-visible {

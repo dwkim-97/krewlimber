@@ -362,3 +362,34 @@ it('locks the acquired-number input until the submitted number finishes saving',
   expect(input.disabled).toBe(false);
   expect(input.value).toBe('');
 });
+
+it.each(['collecting', 'playing'] as const)('shows save feedback only on the pressed cell during %s', async phase => {
+  const current = state(phase);
+  current.team!.board = [...numbers];
+  current.team!.ready = true;
+  current.isMember = true;
+  current.canMark = phase === 'playing';
+  let finishSave: (value: Response) => void = () => {};
+  const fetcher = vi.fn((_url: string, init: RequestInit) =>
+    init?.method
+      ? new Promise<Response>(resolve => {
+          finishSave = resolve;
+        })
+      : Promise.resolve(response(current))
+  );
+  vi.stubGlobal('fetch', fetcher);
+  mount();
+  const first = await screen.findByRole('button', {name: '1행 1열 숫자 1'});
+  const second = screen.getByRole('button', {name: '1행 2열 숫자 2'});
+  fireEvent.click(first);
+  expect(first.getAttribute('aria-busy')).toBe('true');
+  expect(second.getAttribute('aria-busy')).toBe('false');
+  expect(second.getAttribute('data-locked')).toBe('false');
+  expect((second as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(second);
+  expect(fetcher.mock.calls.filter(([, init]) => init?.method)).toHaveLength(1);
+  await act(async () => {
+    finishSave(response(current));
+  });
+  await waitFor(() => expect(first.getAttribute('aria-busy')).toBe('false'));
+});
